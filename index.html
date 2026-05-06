@@ -1,0 +1,1751 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Chapaa · Moyo Platform</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Roboto:wght@400;500;700&family=Roboto+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.24.0/babel.min.js"></script>
+
+<style>
+  :root {
+    --navy: #0B1330;
+    --navy-2: #131C44;
+    --navy-3: #1B2658;
+    --teal: #15B894;
+    --teal-2: #1FD1A8;
+    --teal-light: #B8ECD9;
+    --teal-soft: #E6F8F1;
+    --green-deep: #04372C;
+    --ink: #0A1029;
+    --ink-2: #2A3358;
+    --muted: #6B7595;
+    --muted-2: #9AA3BD;
+    --line: #E7EAF3;
+    --line-2: #F1F3F9;
+    --bg: #F7F8FC;
+    --bg-2: #FBFCFD;
+    --white: #FFFFFF;
+    --rose: #E5547D;
+    --amber: #E89B3C;
+    --serif: 'Plus Jakarta Sans', -apple-system, sans-serif;
+    --sans: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+    --mono: 'Roboto Mono', 'SF Mono', monospace;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; }
+  body {
+    font-family: var(--sans);
+    background: var(--bg);
+    color: var(--ink);
+    font-size: 14px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ============ TOP SWITCHER ============ */
+  .view-switch {
+    position: fixed; top: 16px; left: 50%; transform: translateX(-50%);
+    z-index: 1000;
+    background: var(--navy);
+    padding: 4px;
+    border-radius: 999px;
+    display: flex;
+    gap: 2px;
+    box-shadow: 0 8px 24px rgba(11,19,48,0.25), 0 2px 6px rgba(11,19,48,0.15);
+  }
+  .view-switch button {
+    background: transparent; color: rgba(255,255,255,0.6); border: none;
+    padding: 8px 18px; border-radius: 999px; font-family: var(--sans);
+    font-size: 12px; font-weight: 500; letter-spacing: 0.02em;
+    cursor: pointer; transition: all 0.2s;
+  }
+  .view-switch button.active {
+    background: var(--teal); color: var(--green-deep);
+    font-weight: 600;
+  }
+  .view-switch button:hover:not(.active) { color: rgba(255,255,255,0.95); }
+
+  /* ============ DASHBOARD LAYOUT ============ */
+  .dash-wrap { display: flex; min-height: 100vh; }
+
+  .sidebar {
+    width: 240px;
+    background: var(--navy);
+    color: #fff;
+    padding: 28px 16px 24px;
+    position: sticky; top: 0; height: 100vh;
+    display: flex; flex-direction: column;
+    flex-shrink: 0;
+  }
+  .brand { display: flex; align-items: center; gap: 10px; padding: 0 8px 28px; }
+  .brand-mark {
+    width: 32px; height: 32px; border-radius: 9px;
+    background: linear-gradient(135deg, var(--teal) 0%, var(--teal-2) 100%);
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 0 0 1px rgba(255,255,255,0.06), inset 0 1px 0 rgba(255,255,255,0.2);
+  }
+  .brand-mark svg { width: 18px; height: 18px; }
+  .brand-text { line-height: 1.1; }
+  .brand-text .nm { font-family: var(--sans); font-size: 17px; letter-spacing: -0.01em; font-weight: 700; }
+  .brand-text .sub { font-size: 10px; color: var(--teal-light); letter-spacing: 0.12em; text-transform: uppercase; }
+
+  .nav-section { margin-bottom: 18px; }
+  .nav-label { font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; color: rgba(255,255,255,0.4); padding: 0 12px 8px; font-weight: 500; }
+  .nav-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 9px 12px; border-radius: 8px; cursor: pointer;
+    color: rgba(255,255,255,0.7); font-size: 13px; font-weight: 500;
+    transition: all 0.15s;
+  }
+  .nav-item:hover { background: rgba(255,255,255,0.05); color: #fff; }
+  .nav-item.active { background: var(--navy-3); color: #fff; }
+  .nav-item.active .ico { color: var(--teal-2); }
+  .ico { width: 16px; height: 16px; flex-shrink: 0; opacity: 0.85; }
+  .nav-item.active .ico { opacity: 1; }
+  .nav-badge { margin-left: auto; background: var(--teal); color: var(--green-deep); font-size: 10px; font-weight: 600; padding: 2px 7px; border-radius: 999px; }
+
+  .sidebar-foot {
+    margin-top: auto;
+    padding: 12px;
+    background: var(--navy-2);
+    border-radius: 12px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .avatar {
+    width: 34px; height: 34px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--teal) 0%, var(--teal-2) 100%);
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 600; color: var(--green-deep); font-size: 13px;
+    flex-shrink: 0;
+  }
+  .sidebar-foot .nm { font-size: 12px; font-weight: 600; color: #fff; line-height: 1.2; }
+  .sidebar-foot .role { font-size: 10px; color: var(--teal-light); }
+
+  /* ============ MAIN ============ */
+  .main { flex: 1; min-width: 0; padding: 56px 40px 40px; }
+
+  .pageHead { display: flex; align-items: flex-end; justify-content: space-between; gap: 24px; margin-bottom: 28px; flex-wrap: wrap; }
+  .pageHead .crumb { font-size: 11px; letter-spacing: 0.12em; color: var(--muted); text-transform: uppercase; margin-bottom: 6px; font-weight: 500; }
+  .pageHead h1 { font-family: var(--sans); font-size: 36px; line-height: 1.05; letter-spacing: -0.025em; color: var(--ink); font-weight: 700; }
+  .pageHead h1 em { font-style: normal; color: var(--teal); font-weight: 700; }
+  .pageHead .sub { color: var(--muted); margin-top: 8px; font-size: 13.5px; }
+
+  .head-actions { display: flex; gap: 8px; align-items: center; }
+  .btn {
+    border: none; cursor: pointer; font-family: var(--sans);
+    font-size: 12.5px; font-weight: 500; padding: 10px 16px;
+    border-radius: 9px; display: inline-flex; align-items: center; gap: 7px;
+    transition: all 0.15s;
+  }
+  .btn-ghost { background: var(--white); color: var(--ink); border: 1px solid var(--line); }
+  .btn-ghost:hover { background: var(--bg); border-color: #D8DDEA; }
+  .btn-dark { background: var(--navy); color: #fff; }
+  .btn-dark:hover { background: var(--navy-2); }
+  .btn-teal { background: var(--teal); color: var(--green-deep); font-weight: 600; }
+  .btn-teal:hover { background: var(--teal-2); }
+  .btn-icon { padding: 9px; }
+
+  /* KPI HERO */
+  .kpi-hero {
+    background: var(--navy);
+    background-image:
+      radial-gradient(ellipse 800px 400px at 100% 0%, rgba(21,184,148,0.18), transparent 60%),
+      radial-gradient(ellipse 600px 300px at 0% 100%, rgba(31,209,168,0.10), transparent 70%);
+    color: #fff;
+    border-radius: 18px;
+    padding: 28px 32px;
+    display: grid;
+    grid-template-columns: 1.4fr 1fr 1fr 1fr;
+    gap: 28px;
+    margin-bottom: 24px;
+    position: relative;
+    overflow: hidden;
+  }
+  .kpi-hero::after {
+    content: ''; position: absolute; inset: 0;
+    background: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='60' height='60'><circle cx='30' cy='30' r='0.5' fill='%23fff' opacity='0.06'/></svg>");
+    pointer-events: none;
+  }
+  .hero-main { position: relative; z-index: 1; }
+  .hero-main .label {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: rgba(21,184,148,0.18); color: var(--teal-2);
+    font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase;
+    padding: 5px 10px; border-radius: 999px; font-weight: 600;
+    margin-bottom: 14px;
+  }
+  .hero-main .label .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--teal-2); box-shadow: 0 0 0 3px rgba(31,209,168,0.25); animation: pulse 2s infinite; }
+  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.5; } }
+
+  .big-amount { font-family: var(--sans); font-size: 48px; line-height: 1.05; letter-spacing: -0.025em; font-weight: 700; }
+  .big-amount .cur { font-family: var(--sans); font-size: 18px; color: var(--teal-2); font-weight: 500; letter-spacing: 0.04em; vertical-align: top; margin-right: 4px; }
+  .hero-main .of { color: rgba(255,255,255,0.55); font-size: 13px; margin-top: 8px; }
+  .hero-main .of b { color: #fff; font-weight: 600; }
+
+  .progress-wrap { margin-top: 18px; }
+  .progress-bar {
+    height: 8px; background: rgba(255,255,255,0.08);
+    border-radius: 999px; overflow: hidden; position: relative;
+  }
+  .progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--teal) 0%, var(--teal-2) 100%);
+    border-radius: 999px;
+    box-shadow: 0 0 24px rgba(31,209,168,0.5);
+    position: relative;
+  }
+  .progress-fill::after {
+    content: ''; position: absolute; right: 0; top: -2px;
+    width: 12px; height: 12px; border-radius: 50%;
+    background: #fff; box-shadow: 0 0 12px rgba(31,209,168,0.8);
+  }
+  .progress-meta { display: flex; justify-content: space-between; margin-top: 10px; font-size: 11px; color: rgba(255,255,255,0.6); }
+
+  .hero-stat { position: relative; z-index: 1; padding-left: 24px; border-left: 1px solid rgba(255,255,255,0.08); }
+  .hero-stat .lbl { font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; color: rgba(255,255,255,0.55); font-weight: 500; }
+  .hero-stat .val { font-family: var(--sans); font-size: 28px; margin-top: 6px; line-height: 1.05; letter-spacing: -0.02em; font-weight: 700; }
+  .hero-stat .delta { font-size: 11px; margin-top: 8px; display: inline-flex; align-items: center; gap: 4px; padding: 3px 8px; border-radius: 999px; font-weight: 500; }
+  .delta-up { background: rgba(31,209,168,0.15); color: var(--teal-2); }
+  .delta-down { background: rgba(229,84,125,0.15); color: var(--rose); }
+  .delta-flat { background: rgba(255,255,255,0.08); color: rgba(255,255,255,0.7); }
+
+  /* GRID */
+  .grid-2 { display: grid; grid-template-columns: 1.6fr 1fr; gap: 20px; margin-bottom: 20px; }
+  .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; margin-bottom: 20px; }
+
+  .card {
+    background: var(--white); border-radius: 16px;
+    border: 1px solid var(--line);
+    padding: 24px;
+  }
+  .card-head { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 18px; }
+  .card-head h3 { font-family: var(--sans); font-size: 17px; line-height: 1.2; letter-spacing: -0.015em; color: var(--ink); font-weight: 700; }
+  .card-head .sub { font-size: 12px; color: var(--muted); margin-top: 3px; }
+  .card-head .actions { display: flex; gap: 4px; }
+
+  .seg {
+    display: inline-flex; background: var(--bg); border-radius: 8px; padding: 3px;
+    border: 1px solid var(--line);
+  }
+  .seg button {
+    border: none; background: transparent; cursor: pointer; padding: 5px 10px;
+    font-family: var(--sans); font-size: 11.5px; font-weight: 500; color: var(--muted);
+    border-radius: 6px; transition: all 0.15s;
+  }
+  .seg button.active { background: var(--white); color: var(--ink); box-shadow: 0 1px 3px rgba(11,19,48,0.06); }
+
+  /* CONTRIBUTORS TABLE */
+  .table { width: 100%; border-collapse: collapse; }
+  .table th {
+    text-align: left; font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase;
+    color: var(--muted); font-weight: 500; padding: 10px 0;
+    border-bottom: 1px solid var(--line);
+  }
+  .table th:last-child, .table td:last-child { text-align: right; }
+  .table td { padding: 14px 0; border-bottom: 1px solid var(--line-2); font-size: 13px; vertical-align: middle; }
+  .table tr:last-child td { border-bottom: none; }
+  .contrib { display: flex; align-items: center; gap: 11px; }
+  .contrib-avatar {
+    width: 32px; height: 32px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 600; font-size: 11px; flex-shrink: 0;
+    background: linear-gradient(135deg, var(--teal-soft), var(--teal-light));
+    color: var(--green-deep);
+  }
+  .contrib-avatar.v2 { background: linear-gradient(135deg, #FFE9D6, #FFD0A6); color: #8B4A1A; }
+  .contrib-avatar.v3 { background: linear-gradient(135deg, #E0E2F8, #C5C9F0); color: #3D448A; }
+  .contrib-avatar.v4 { background: linear-gradient(135deg, #FFD8E2, #FFB1C5); color: #8B2D4A; }
+  .contrib-name { font-weight: 600; color: var(--ink); }
+  .contrib-meta { font-size: 11px; color: var(--muted); margin-top: 1px; }
+  .amount-cell { font-family: var(--mono); font-weight: 600; font-size: 13px; }
+  .channel-tag {
+    display: inline-flex; align-items: center; gap: 5px;
+    font-size: 11px; padding: 3px 8px; border-radius: 6px; font-weight: 500;
+    background: var(--bg); color: var(--ink-2);
+    border: 1px solid var(--line);
+  }
+  .channel-tag .pip { width: 5px; height: 5px; border-radius: 50%; }
+
+  /* WITHDRAWAL CARD */
+  .withdraw-card {
+    background: linear-gradient(135deg, var(--navy) 0%, var(--navy-2) 100%);
+    color: #fff;
+    border-radius: 16px;
+    padding: 24px;
+    position: relative; overflow: hidden;
+  }
+  .withdraw-card::before {
+    content: ''; position: absolute; top: -40px; right: -40px;
+    width: 200px; height: 200px;
+    background: radial-gradient(circle, rgba(21,184,148,0.25) 0%, transparent 70%);
+  }
+  .withdraw-card .lbl { font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--teal-2); font-weight: 600; }
+  .withdraw-card .avail { font-family: var(--sans); font-size: 30px; margin-top: 8px; line-height: 1.05; letter-spacing: -0.02em; font-weight: 700; }
+  .withdraw-card .avail .cur { font-family: var(--sans); font-size: 13px; color: var(--teal-2); font-weight: 500; margin-right: 4px; }
+  .withdraw-card .desc { font-size: 12px; color: rgba(255,255,255,0.6); margin-top: 6px; }
+  .withdraw-card .btn-teal { width: 100%; justify-content: center; margin-top: 18px; padding: 12px; font-size: 13px; }
+  .withdraw-card .recent { margin-top: 18px; padding-top: 18px; border-top: 1px solid rgba(255,255,255,0.08); }
+  .withdraw-card .recent-row { display: flex; justify-content: space-between; align-items: center; padding: 6px 0; font-size: 12px; }
+  .withdraw-card .recent-row .l { color: rgba(255,255,255,0.5); font-size: 11px; }
+  .withdraw-card .recent-row .r { font-family: var(--mono); font-weight: 500; }
+  .withdraw-card .recent-row .badge {
+    font-size: 9px; letter-spacing: 0.1em; text-transform: uppercase;
+    padding: 2px 6px; border-radius: 4px; font-weight: 600; margin-left: 8px;
+  }
+  .badge-paid { background: rgba(31,209,168,0.18); color: var(--teal-2); }
+  .badge-pend { background: rgba(232,155,60,0.18); color: var(--amber); }
+
+  /* CHANNEL DONUT card */
+  .channel-list { margin-top: 14px; }
+  .channel-row { display: flex; align-items: center; gap: 12px; padding: 9px 0; border-bottom: 1px solid var(--line-2); }
+  .channel-row:last-child { border: none; }
+  .channel-pip { width: 10px; height: 10px; border-radius: 3px; flex-shrink: 0; }
+  .channel-row .nm { font-size: 12.5px; font-weight: 500; flex: 1; }
+  .channel-row .v { font-family: var(--mono); font-size: 12px; font-weight: 600; color: var(--muted); }
+  .channel-row .pct { font-size: 11px; color: var(--ink); margin-left: 10px; min-width: 36px; text-align: right; font-weight: 600; }
+
+  /* GEO LIST */
+  .geo-row { display: flex; align-items: center; gap: 12px; padding: 9px 0; }
+  .geo-row .flag { font-size: 18px; }
+  .geo-row .nm { font-size: 12.5px; font-weight: 500; flex: 1; }
+  .geo-row .bar-w { flex: 1.2; height: 5px; background: var(--line-2); border-radius: 999px; overflow: hidden; max-width: 110px; }
+  .geo-row .bar-f { height: 100%; background: linear-gradient(90deg, var(--teal), var(--teal-2)); border-radius: 999px; }
+  .geo-row .v { font-family: var(--mono); font-size: 11.5px; color: var(--muted); min-width: 50px; text-align: right; }
+
+  /* MODAL */
+  .modal-overlay {
+    position: fixed; inset: 0; background: rgba(11,19,48,0.55);
+    backdrop-filter: blur(4px);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 2000; padding: 20px;
+    animation: fadeIn 0.2s;
+  }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+  .modal {
+    background: #fff; border-radius: 18px;
+    width: 100%; max-width: 480px;
+    overflow: hidden;
+    box-shadow: 0 24px 60px rgba(11,19,48,0.3);
+    animation: slideUp 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  @keyframes slideUp { from { transform: translateY(12px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+  .modal-head {
+    padding: 22px 26px 18px;
+    border-bottom: 1px solid var(--line);
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .modal-head h3 { font-family: var(--sans); font-size: 20px; line-height: 1.2; letter-spacing: -0.015em; font-weight: 700; }
+  .modal-head .step { font-size: 11px; color: var(--muted); letter-spacing: 0.1em; text-transform: uppercase; font-weight: 500; }
+  .modal-close { background: var(--bg); border: none; width: 30px; height: 30px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; color: var(--muted); }
+  .modal-close:hover { background: var(--line); color: var(--ink); }
+
+  .step-track { display: flex; gap: 6px; padding: 14px 26px 0; }
+  .step-track .seg-bar { flex: 1; height: 3px; background: var(--line); border-radius: 999px; overflow: hidden; }
+  .step-track .seg-bar.done { background: var(--teal); }
+  .step-track .seg-bar.active { background: linear-gradient(90deg, var(--teal) 50%, var(--line) 50%); }
+
+  .modal-body { padding: 24px 26px; }
+  .modal-body label { font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); font-weight: 600; display: block; margin-bottom: 7px; }
+  .modal-body .field { margin-bottom: 18px; }
+  .modal-body input, .modal-body select {
+    width: 100%; padding: 12px 14px;
+    border: 1px solid var(--line);
+    border-radius: 10px; font-family: var(--sans); font-size: 14px;
+    color: var(--ink); background: #fff;
+    transition: all 0.15s;
+  }
+  .modal-body input:focus, .modal-body select:focus {
+    outline: none; border-color: var(--teal);
+    box-shadow: 0 0 0 4px rgba(21,184,148,0.12);
+  }
+  .modal-body .input-prefix {
+    position: relative;
+  }
+  .modal-body .input-prefix .pf {
+    position: absolute; left: 14px; top: 50%; transform: translateY(-50%);
+    font-family: var(--mono); font-size: 13px; color: var(--muted); font-weight: 500;
+    pointer-events: none;
+  }
+  .modal-body .input-prefix input { padding-left: 50px; font-family: var(--mono); font-size: 18px; font-weight: 600; }
+
+  .channel-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .channel-opt {
+    border: 1.5px solid var(--line); padding: 12px; border-radius: 10px; cursor: pointer;
+    display: flex; align-items: center; gap: 10px; transition: all 0.15s;
+  }
+  .channel-opt:hover { border-color: var(--teal-light); background: var(--teal-soft); }
+  .channel-opt.selected { border-color: var(--teal); background: var(--teal-soft); }
+  .channel-opt .ico-box { width: 30px; height: 30px; border-radius: 7px; background: #fff; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 14px; font-weight: 700; }
+  .channel-opt .nm { font-size: 12.5px; font-weight: 600; line-height: 1.2; }
+  .channel-opt .acct { font-family: var(--mono); font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+  .summary-box {
+    background: var(--bg); border-radius: 12px; padding: 16px 18px;
+  }
+  .summary-row { display: flex; justify-content: space-between; align-items: center; padding: 6px 0; font-size: 13px; }
+  .summary-row .l { color: var(--muted); }
+  .summary-row .r { font-family: var(--mono); font-weight: 600; }
+  .summary-row.total { border-top: 1px solid var(--line); margin-top: 8px; padding-top: 12px; font-size: 14px; }
+  .summary-row.total .r { font-size: 17px; color: var(--teal); }
+
+  .otp-grid { display: flex; gap: 8px; justify-content: center; margin: 12px 0 8px; }
+  .otp-grid input {
+    width: 48px; height: 56px; text-align: center;
+    font-family: var(--mono); font-size: 22px; font-weight: 600;
+    padding: 0;
+  }
+  .otp-help { text-align: center; font-size: 12px; color: var(--muted); margin-top: 16px; }
+  .otp-help a { color: var(--teal); font-weight: 600; cursor: pointer; text-decoration: none; }
+
+  .success-box { text-align: center; padding: 12px 0 4px; }
+  .success-icon {
+    width: 60px; height: 60px; border-radius: 50%; margin: 0 auto 16px;
+    background: linear-gradient(135deg, var(--teal), var(--teal-2));
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 8px 24px rgba(21,184,148,0.4);
+    animation: pop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+  @keyframes pop { 0% { transform: scale(0); } 60% { transform: scale(1.15); } 100% { transform: scale(1); } }
+  .success-box h4 { font-family: var(--sans); font-size: 22px; line-height: 1.2; font-weight: 700; letter-spacing: -0.015em; }
+  .success-box p { color: var(--muted); margin-top: 6px; font-size: 13px; }
+  .ref-box {
+    background: var(--bg); border-radius: 10px; padding: 12px 16px;
+    margin-top: 18px; display: flex; justify-content: space-between; align-items: center;
+  }
+  .ref-box .l { font-size: 11px; color: var(--muted); letter-spacing: 0.06em; text-transform: uppercase; font-weight: 500; }
+  .ref-box .r { font-family: var(--mono); font-weight: 600; font-size: 13px; }
+
+  .modal-foot { padding: 18px 26px; border-top: 1px solid var(--line); display: flex; gap: 8px; justify-content: flex-end; background: var(--bg-2); }
+
+  /* ============ PUBLIC PAGE ============ */
+  .pub-wrap { min-height: 100vh; background: #fff; }
+  .pub-nav {
+    padding: 18px 6%;
+    display: flex; align-items: center; justify-content: space-between;
+    border-bottom: 1px solid var(--line);
+    background: rgba(255,255,255,0.85);
+    backdrop-filter: blur(10px);
+    position: sticky; top: 0; z-index: 100;
+  }
+  .pub-nav .brand { padding: 0; }
+  .pub-nav .nav-links { display: flex; gap: 26px; font-size: 13px; }
+  .pub-nav .nav-links a { color: var(--ink-2); text-decoration: none; font-weight: 500; cursor: pointer; }
+  .pub-nav .nav-links a:hover { color: var(--teal); }
+
+  .pub-hero {
+    background: var(--navy);
+    background-image:
+      radial-gradient(ellipse 1000px 500px at 80% 20%, rgba(21,184,148,0.22), transparent 60%),
+      radial-gradient(ellipse 700px 400px at 10% 90%, rgba(31,209,168,0.10), transparent 70%);
+    color: #fff;
+    padding: 80px 6% 100px;
+    position: relative; overflow: hidden;
+  }
+  .pub-hero::before {
+    content: ''; position: absolute; inset: 0;
+    background-image:
+      linear-gradient(rgba(255,255,255,0.025) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px);
+    background-size: 60px 60px;
+    pointer-events: none;
+    mask-image: radial-gradient(ellipse at center, black 30%, transparent 80%);
+  }
+  .pub-hero-inner { max-width: 1200px; margin: 0 auto; display: grid; grid-template-columns: 1.2fr 1fr; gap: 60px; align-items: center; position: relative; z-index: 1; }
+  .pub-hero .tag {
+    display: inline-flex; align-items: center; gap: 8px;
+    background: rgba(21,184,148,0.15); color: var(--teal-2);
+    padding: 7px 14px; border-radius: 999px;
+    font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; font-weight: 600;
+    margin-bottom: 22px;
+  }
+  .pub-hero .tag .live-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--teal-2); box-shadow: 0 0 0 4px rgba(31,209,168,0.25); animation: pulse 2s infinite; }
+  .pub-hero h1 {
+    font-family: var(--sans); font-size: 64px; line-height: 1.05; letter-spacing: -0.035em; font-weight: 800;
+  }
+  .pub-hero h1 em { font-style: normal; color: var(--teal-2); font-weight: 800; }
+  .pub-hero .lede { color: rgba(255,255,255,0.72); font-size: 17px; line-height: 1.55; margin-top: 22px; max-width: 480px; }
+
+  .pub-stats {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 20px; padding: 28px;
+    backdrop-filter: blur(10px);
+  }
+  .pub-stats .lbl { font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; color: rgba(255,255,255,0.55); font-weight: 600; }
+  .pub-stats .raised { font-family: var(--sans); font-size: 48px; line-height: 1.05; letter-spacing: -0.03em; margin: 6px 0 4px; font-weight: 700; }
+  .pub-stats .raised .cur { font-family: var(--sans); font-size: 18px; color: var(--teal-2); font-weight: 500; margin-right: 6px; }
+  .pub-stats .of { color: rgba(255,255,255,0.6); font-size: 13px; }
+  .pub-stats .of b { color: #fff; }
+  .pub-stats .progress-wrap { margin: 22px 0 18px; }
+  .pub-stats .pub-mini-stats { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; padding-top: 22px; border-top: 1px solid rgba(255,255,255,0.08); }
+  .pub-stats .mini-stat .v { font-family: var(--sans); font-size: 22px; line-height: 1.1; letter-spacing: -0.015em; font-weight: 700; }
+  .pub-stats .mini-stat .l { font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: rgba(255,255,255,0.55); margin-top: 4px; font-weight: 500; }
+
+  /* PUBLIC SECTIONS */
+  .pub-section { padding: 70px 6%; }
+  .pub-section.alt { background: var(--bg); }
+  .pub-section-inner { max-width: 1200px; margin: 0 auto; }
+  .pub-section h2 {
+    font-family: var(--sans); font-size: 38px; line-height: 1.1; letter-spacing: -0.03em; font-weight: 700;
+    margin-bottom: 8px;
+  }
+  .pub-section h2 em { font-style: normal; color: var(--teal); font-weight: 700; }
+  .pub-section .sec-sub { color: var(--muted); font-size: 15px; max-width: 580px; }
+
+  .pub-cards-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 18px; margin-top: 36px; }
+  .pub-stat-card {
+    background: #fff; border: 1px solid var(--line);
+    border-radius: 18px; padding: 26px;
+    position: relative; overflow: hidden;
+  }
+  .pub-stat-card .ico-bg {
+    position: absolute; top: -10px; right: -10px;
+    width: 80px; height: 80px; border-radius: 16px;
+    background: var(--teal-soft); opacity: 0.5;
+    transform: rotate(15deg);
+  }
+  .pub-stat-card .ico {
+    position: relative; width: 36px; height: 36px; border-radius: 10px;
+    background: var(--teal-soft); color: var(--teal);
+    display: flex; align-items: center; justify-content: center;
+    margin-bottom: 16px;
+  }
+  .pub-stat-card .v { font-family: var(--sans); font-size: 32px; line-height: 1.1; letter-spacing: -0.025em; font-weight: 700; }
+  .pub-stat-card .l { font-size: 13px; color: var(--muted); margin-top: 6px; }
+  .pub-stat-card .delta { font-size: 11px; margin-top: 12px; display: inline-flex; align-items: center; gap: 4px; padding: 3px 8px; border-radius: 999px; background: var(--teal-soft); color: var(--teal); font-weight: 600; }
+
+  .pub-graph-grid { display: grid; grid-template-columns: 1.5fr 1fr; gap: 20px; margin-top: 36px; }
+
+  .donor-wall { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-top: 36px; }
+  .donor-tile {
+    background: #fff; border: 1px solid var(--line); border-radius: 14px;
+    padding: 18px; display: flex; align-items: center; gap: 12px;
+  }
+  .donor-tile .nm { font-weight: 600; font-size: 13px; line-height: 1.1; }
+  .donor-tile .am { font-family: var(--mono); font-size: 12px; color: var(--teal); font-weight: 600; margin-top: 3px; }
+
+  .pub-footer { background: var(--navy); color: rgba(255,255,255,0.6); padding: 50px 6% 30px; }
+  .pub-footer-inner { max-width: 1200px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 20px; }
+  .pub-footer .brand-text .nm { color: #fff; }
+  .pub-footer .links { display: flex; gap: 20px; font-size: 12px; }
+  .pub-footer .links a { color: rgba(255,255,255,0.5); text-decoration: none; cursor: pointer; }
+  .pub-footer .links a:hover { color: var(--teal-2); }
+
+  /* tooltip */
+  .recharts-tooltip-wrapper { outline: none !important; }
+  .tt {
+    background: var(--navy); color: #fff; padding: 10px 14px;
+    border-radius: 8px; font-size: 12px;
+    box-shadow: 0 6px 18px rgba(11,19,48,0.25);
+  }
+  .tt .l { color: rgba(255,255,255,0.55); font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; }
+  .tt .v { font-family: var(--mono); font-weight: 600; margin-top: 2px; }
+
+  /* Print */
+  @media print {
+    .view-switch, .sidebar, .head-actions, .modal-overlay { display: none !important; }
+    .main { padding: 20px; }
+    .card, .kpi-hero, .withdraw-card { break-inside: avoid; box-shadow: none; }
+  }
+
+  /* Responsive */
+  @media (max-width: 1100px) {
+    .kpi-hero { grid-template-columns: 1fr 1fr; }
+    .grid-2, .grid-3, .pub-cards-grid, .pub-graph-grid, .donor-wall { grid-template-columns: 1fr 1fr; }
+    .pub-hero-inner { grid-template-columns: 1fr; }
+    .pub-hero h1 { font-size: 52px; }
+  }
+  @media (max-width: 720px) {
+    .sidebar { display: none; }
+    .main { padding: 70px 18px 30px; }
+    .kpi-hero { grid-template-columns: 1fr; padding: 22px; }
+    .big-amount { font-size: 40px; }
+    .grid-2, .grid-3, .pub-cards-grid, .pub-graph-grid, .donor-wall { grid-template-columns: 1fr; }
+    .pageHead h1 { font-size: 28px; }
+    .pub-section { padding: 50px 5%; }
+    .pub-section h2 { font-size: 32px; }
+    .pub-hero { padding: 60px 5% 70px; }
+    .pub-hero h1 { font-size: 40px; }
+  }
+</style>
+</head>
+<body>
+
+<div id="root"></div>
+
+<script type="text/babel" data-type="module">
+const { useState, useMemo, useEffect, useRef } = React;
+
+// Reusable Chart.js wrapper
+function ChartCanvas({ type, data, options, height = 280 }) {
+  const ref = useRef(null);
+  const chartRef = useRef(null);
+
+  useEffect(() => {
+    if (!ref.current) return;
+    if (chartRef.current) chartRef.current.destroy();
+    chartRef.current = new Chart(ref.current, { type, data, options });
+    return () => { if (chartRef.current) chartRef.current.destroy(); };
+  }, [type, JSON.stringify(data), JSON.stringify(options)]);
+
+  return (
+    <div style={{ position: 'relative', width: '100%', height }}>
+      <canvas ref={ref}></canvas>
+    </div>
+  );
+}
+
+// -------- DATA --------
+const fmtTZS = (n) => {
+  if (n >= 1e9) return (n/1e9).toFixed(2) + 'B';
+  if (n >= 1e6) return (n/1e6).toFixed(2) + 'M';
+  if (n >= 1e3) return (n/1e3).toFixed(1) + 'K';
+  return n.toLocaleString();
+};
+const fmtTZSFull = (n) => n.toLocaleString('en-US');
+
+const RAISED = 1842500000;          // 1.84B TZS
+const GOAL   = 2500000000;          // 2.5B TZS
+const PCT    = (RAISED/GOAL)*100;
+const AVAILABLE = 1156000000;       // available to withdraw
+const WITHDRAWN  = RAISED - AVAILABLE;
+const CONTRIBUTORS = 12847;
+const DAYS_LEFT = 47;
+
+// 14-day collection trend
+const dailyData = [
+  { d: 'Apr 22', v: 38500000, donors: 412 },
+  { d: 'Apr 23', v: 42800000, donors: 478 },
+  { d: 'Apr 24', v: 51200000, donors: 521 },
+  { d: 'Apr 25', v: 47600000, donors: 489 },
+  { d: 'Apr 26', v: 62100000, donors: 612 },
+  { d: 'Apr 27', v: 78400000, donors: 743 },
+  { d: 'Apr 28', v: 71200000, donors: 681 },
+  { d: 'Apr 29', v: 68900000, donors: 654 },
+  { d: 'Apr 30', v: 84700000, donors: 798 },
+  { d: 'May 01', v: 91300000, donors: 856 },
+  { d: 'May 02', v: 76800000, donors: 712 },
+  { d: 'May 03', v: 89200000, donors: 832 },
+  { d: 'May 04', v: 94600000, donors: 891 },
+  { d: 'May 05', v: 102400000, donors: 967 },
+];
+
+const channelData = [
+  { name: 'M-Pesa', value: 824000000, color: '#15B894', pct: 44.7 },
+  { name: 'Tigo Pesa', value: 412000000, color: '#1FD1A8', pct: 22.4 },
+  { name: 'Airtel Money', value: 298000000, color: '#04372C', pct: 16.2 },
+  { name: 'Bank Transfer', value: 211000000, color: '#0B1330', pct: 11.5 },
+  { name: 'Card', value: 97500000, color: '#9AA3BD', pct:  5.3 },
+];
+
+const geoData = [
+  { flag: '🇹🇿', name: 'Dar es Salaam', value: 612000000, count: 4287, pct: 33.2, children: 58 },
+  { flag: '🇹🇿', name: 'Arusha',         value: 287000000, count: 2104, pct: 15.6, children: 27 },
+  { flag: '🇹🇿', name: 'Mwanza',         value: 198000000, count: 1856, pct: 10.7, children: 19 },
+  { flag: '🇹🇿', name: 'Dodoma',         value: 142000000, count: 1342, pct:  7.7, children: 13 },
+  { flag: '🇹🇿', name: 'Mbeya',          value:  98000000, count:  892, pct:  5.3, children:  9 },
+  { flag: '🇹🇿', name: 'Tanga',          value:  84500000, count:  741, pct:  4.6, children:  8 },
+  { flag: '🇰🇪', name: 'Kenya',          value: 248000000, count: 1421, pct: 13.5, children:  0 },
+  { flag: '🌍', name: 'Diaspora',        value: 355500000, count: 1837, pct: 19.3, children:  8 },
+];
+
+const contributors = [
+  { id: 1, name: 'Amina Kirimi',     handle: '@aminak',                    avatar: 'AK', vc: 1, amount:  5000000, count: 3,  channel: 'M-Pesa',     color: '#15B894', when: '2 minutes ago' },
+  { id: 2, name: 'Mwajuma Hassan',   handle: '@mwajh',                     avatar: 'MH', vc: 2, amount:  2500000, count: 7,  channel: 'Tigo Pesa',  color: '#1FD1A8', when: '14 minutes ago' },
+  { id: 3, name: 'Anonymous',        handle: 'Identity hidden by request', avatar: 'AN', vc: 3, amount: 10000000, count: 1,  channel: 'Bank',       color: '#0B1330', when: '38 minutes ago' },
+  { id: 4, name: 'Joseph Mwakapina', handle: '@josephm',                   avatar: 'JM', vc: 4, amount:   850000, count: 12, channel: 'Airtel',     color: '#04372C', when: '1 hour ago' },
+  { id: 5, name: 'Vodacom Foundation', handle: 'Corporate contribution',   avatar: 'VF', vc: 1, amount: 50000000, count: 1,  channel: 'Bank',       color: '#0B1330', when: '2 hours ago' },
+  { id: 6, name: 'Grace Mollel',     handle: '@gracem',                    avatar: 'GM', vc: 2, amount:   320000, count: 4,  channel: 'M-Pesa',     color: '#15B894', when: '3 hours ago' },
+  { id: 7, name: 'Salim Mzee',       handle: '@salimz',                    avatar: 'SM', vc: 4, amount:  1200000, count: 2,  channel: 'Tigo Pesa',  color: '#1FD1A8', when: '4 hours ago' },
+  { id: 8, name: 'NMB Bank Staff',   handle: 'Group contribution',         avatar: 'NB', vc: 3, amount: 18500000, count: 1,  channel: 'Bank',       color: '#0B1330', when: '5 hours ago' },
+];
+
+const recentWithdrawals = [
+  { date: 'May 03', amount: 280000000, ref: 'WD-9281', status: 'paid' },
+  { date: 'Apr 28', amount: 165000000, ref: 'WD-9264', status: 'paid' },
+  { date: 'Apr 21', amount: 195000000, ref: 'WD-9217', status: 'paid' },
+];
+
+const Logo = ({ size = 18 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <path d="M12 21 C 8 17.5, 6.5 14.8, 7.5 12.2 C 8.4 9.8, 10.5 10.3, 12 11.6 C 13.5 10.3, 15.6 9.8, 16.5 12.2 C 17.5 14.8, 16 17.5, 12 21 Z" fill="#04372C"/>
+    <path d="M3 13 H 6.5 L 7.6 10.5 L 9 14.5 L 10.4 11.5 L 11.5 13" stroke="#04372C" strokeWidth="1.2" fill="none" strokeLinecap="round" strokeLinejoin="round" opacity="0.7"/>
+  </svg>
+);
+
+// Shared Chart.js base configuration
+const CHART_FONT = "'Plus Jakarta Sans', -apple-system, sans-serif";
+const baseAxis = {
+  grid: { color: '#F1F3F9', drawBorder: false, drawTicks: false },
+  border: { display: false },
+  ticks: { color: '#9AA3BD', font: { family: CHART_FONT, size: 11 }, padding: 8 },
+};
+const baseTooltip = {
+  backgroundColor: '#0B1330',
+  titleColor: 'rgba(255,255,255,0.55)',
+  titleFont: { family: CHART_FONT, size: 10, weight: '500' },
+  bodyColor: '#fff',
+  bodyFont: { family: 'Roboto Mono, monospace', size: 13, weight: '600' },
+  padding: 12, cornerRadius: 8, displayColors: false,
+  caretSize: 0, borderColor: 'transparent',
+};
+
+// =================== MOCKUP SUB-PAGES ===================
+function LiveTransactions() {
+  const txns = [
+    { id: 'TX-8821', name: 'Rehema Njau',      amount: 500000,   channel: 'M-Pesa',    region: 'Dar es Salaam', time: '10:42:18', status: 'confirmed' },
+    { id: 'TX-8820', name: 'Omar Shaaban',     amount: 250000,   channel: 'Tigo Pesa', region: 'Zanzibar',      time: '10:41:55', status: 'confirmed' },
+    { id: 'TX-8819', name: 'Anonymous',        amount: 2000000,  channel: 'Bank',      region: 'Unknown',       time: '10:41:12', status: 'confirmed' },
+    { id: 'TX-8818', name: 'Fatuma Ally',      amount: 100000,   channel: 'Airtel',    region: 'Mwanza',        time: '10:40:44', status: 'confirmed' },
+    { id: 'TX-8817', name: 'David Kimaro',     amount: 1500000,  channel: 'M-Pesa',    region: 'Arusha',        time: '10:39:30', status: 'confirmed' },
+    { id: 'TX-8816', name: 'Neema Wambura',    amount: 300000,   channel: 'M-Pesa',    region: 'Dar es Salaam', time: '10:38:02', status: 'pending' },
+    { id: 'TX-8815', name: 'Rashid Mwita',     amount: 750000,   channel: 'Tigo Pesa', region: 'Dodoma',        time: '10:36:50', status: 'confirmed' },
+    { id: 'TX-8814', name: 'ABC Foundation',   amount: 10000000, channel: 'Bank',      region: 'Nairobi, KE',   time: '10:35:00', status: 'confirmed' },
+    { id: 'TX-8813', name: 'Safia Hamisi',     amount: 200000,   channel: 'Airtel',    region: 'Tanga',         time: '10:33:15', status: 'confirmed' },
+    { id: 'TX-8812', name: 'George Lema',      amount: 850000,   channel: 'M-Pesa',    region: 'Mbeya',         time: '10:31:40', status: 'failed' },
+  ];
+  const statusColor = { confirmed: '#15B894', pending: '#E89B3C', failed: '#E5547D' };
+  return (
+    <div>
+      <div className="pageHead">
+        <div>
+          <div className="crumb">Moyo · Heart Surgery Fund</div>
+          <h1>Live <em>Transactions</em></h1>
+          <div className="sub">Real-time contribution feed — every shilling counted for our children.</div>
+        </div>
+        <div className="head-actions">
+          <span style={{ display:'inline-flex',alignItems:'center',gap:6,fontSize:12,color:'var(--teal)',fontWeight:600,background:'rgba(21,184,148,0.1)',padding:'7px 12px',borderRadius:999 }}>
+            <span style={{ width:7,height:7,borderRadius:'50%',background:'var(--teal)',display:'inline-block',boxShadow:'0 0 0 3px rgba(21,184,148,0.25)',animation:'pulse 2s infinite' }}></span>
+            12 new in last hour
+          </span>
+        </div>
+      </div>
+      <div className="card">
+        <table className="table">
+          <thead><tr><th>Tx ID</th><th>Contributor</th><th>Channel</th><th>Region</th><th>Time</th><th>Status</th><th>Amount</th></tr></thead>
+          <tbody>
+            {txns.map((t,i) => (
+              <tr key={i}>
+                <td><span style={{fontFamily:'var(--mono)',fontSize:11,color:'var(--muted)'}}>{t.id}</span></td>
+                <td><span style={{fontWeight:600}}>{t.name}</span></td>
+                <td><span className="channel-tag">{t.channel}</span></td>
+                <td style={{color:'var(--muted)',fontSize:12}}>{t.region}</td>
+                <td style={{fontFamily:'var(--mono)',fontSize:12,color:'var(--muted)'}}>{t.time}</td>
+                <td><span style={{fontSize:11,padding:'3px 8px',borderRadius:6,fontWeight:600,background:statusColor[t.status]+'22',color:statusColor[t.status]}}>{t.status}</span></td>
+                <td className="amount-cell">TZS {fmtTZSFull(t.amount)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+function ContributorsPage() {
+  const allContribs = [
+    ...contributors,
+    { id: 9,  name: 'Halima Mtoro',    handle: '@halimat',   avatar: 'HM', vc: 1, amount: 450000,   count: 5,  channel: 'M-Pesa',    color: '#15B894', when: '6 hours ago',  region: 'Arusha' },
+    { id: 10, name: 'Patrick Ngowi',   handle: '@patrickn',  avatar: 'PN', vc: 2, amount: 2000000,  count: 2,  channel: 'Bank',       color: '#0B1330', when: '7 hours ago',  region: 'Dar es Salaam' },
+    { id: 11, name: 'Zawadi Msuya',    handle: '@zawadim',   avatar: 'ZM', vc: 3, amount: 100000,   count: 8,  channel: 'Tigo Pesa', color: '#1FD1A8', when: '8 hours ago',  region: 'Mwanza' },
+    { id: 12, name: 'CCBRT Hospital',  handle: 'Partner org',avatar: 'CC', vc: 4, amount: 75000000, count: 1,  channel: 'Bank',       color: '#0B1330', when: '9 hours ago',  region: 'Dar es Salaam' },
+  ].map((c,i) => ({...c, region: c.region || ['Dar es Salaam','Arusha','Dodoma','Mwanza','Diaspora','Kenya'][i%6]}));
+  return (
+    <div>
+      <div className="pageHead">
+        <div>
+          <div className="crumb">Moyo · Heart Surgery Fund</div>
+          <h1>Our <em>Contributors</em></h1>
+          <div className="sub">Every person here is helping a child with a heart condition get the surgery they need.</div>
+        </div>
+      </div>
+      <div className="kpi-hero" style={{gridTemplateColumns:'1fr 1fr 1fr 1fr'}}>
+        <div className="hero-main">
+          <div className="label"><span className="dot"></span>All-time contributors</div>
+          <div className="big-amount">{CONTRIBUTORS.toLocaleString()}</div>
+          <div className="of">from <b>8 countries &amp; regions</b></div>
+        </div>
+        <div className="hero-stat"><div className="lbl">First-time</div><div className="val">8,241</div><div className="delta delta-up">↑ 64.2%</div></div>
+        <div className="hero-stat"><div className="lbl">Returning</div><div className="val">4,606</div><div className="delta delta-up">↑ 35.8%</div></div>
+        <div className="hero-stat"><div className="lbl">Corporates</div><div className="val">47</div><div className="delta delta-flat">→ stable</div></div>
+      </div>
+      <div className="card" style={{marginTop:20}}>
+        <div className="card-head"><div><h3>All contributors</h3><div className="sub">Sorted by most recent contribution</div></div></div>
+        <table className="table">
+          <thead><tr><th>Contributor</th><th>Region</th><th>Channel</th><th>Contributions</th><th>Last activity</th><th>Total amount</th></tr></thead>
+          <tbody>
+            {allContribs.map(c => (
+              <tr key={c.id}>
+                <td><div className="contrib"><div className={'contrib-avatar v'+c.vc}>{c.avatar}</div><div><div className="contrib-name">{c.name}</div><div className="contrib-meta">{c.handle}</div></div></div></td>
+                <td style={{fontSize:12,color:'var(--muted)'}}>{c.region}</td>
+                <td><span className="channel-tag"><span className="pip" style={{background:c.color}}></span>{c.channel}</span></td>
+                <td>{c.count}</td>
+                <td style={{color:'var(--muted)',fontSize:12}}>{c.when}</td>
+                <td className="amount-cell">TZS {fmtTZSFull(c.amount)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+function WithdrawalsPage({ onOpenWithdraw }) {
+  return (
+    <div>
+      <div className="pageHead">
+        <div>
+          <div className="crumb">Moyo · Heart Surgery Fund</div>
+          <h1>Fund <em>Disbursements</em></h1>
+          <div className="sub">Track how funds are disbursed to hospitals and medical partners for children's cardiac care.</div>
+        </div>
+        <div className="head-actions">
+          <button className="btn btn-teal" onClick={onOpenWithdraw}>Initiate Disbursement</button>
+        </div>
+      </div>
+      <div className="kpi-hero" style={{gridTemplateColumns:'1fr 1fr 1fr 1fr'}}>
+        <div className="hero-main">
+          <div className="label"><span className="dot"></span>Total disbursed</div>
+          <div className="big-amount"><span className="cur">TZS</span>{fmtTZSFull(WITHDRAWN)}</div>
+          <div className="of">across <b>3 hospitals</b> and medical partners</div>
+        </div>
+        <div className="hero-stat"><div className="lbl">Available</div><div className="val">{fmtTZS(AVAILABLE)}</div><div className="delta delta-up">↑ ready to disburse</div></div>
+        <div className="hero-stat"><div className="lbl">Disbursements</div><div className="val">3</div><div className="delta delta-flat">→ all confirmed</div></div>
+        <div className="hero-stat"><div className="lbl">Surgeries funded</div><div className="val">142</div><div className="delta delta-up">↑ 3 this week</div></div>
+      </div>
+      <div className="card" style={{marginTop:20}}>
+        <div className="card-head"><div><h3>Disbursement history</h3><div className="sub">Funds sent to medical partners for children's cardiac surgeries</div></div></div>
+        <table className="table">
+          <thead><tr><th>Reference</th><th>Recipient</th><th>Purpose</th><th>Date</th><th>Status</th><th>Amount</th></tr></thead>
+          <tbody>
+            {[
+              { ref:'WD-9281', to:'Muhimbili National Hospital', purpose:'Cardiac surgery batch #8 — 52 children', date:'May 03', status:'paid', amount:280000000 },
+              { ref:'WD-9264', to:'Aga Khan Hospital, DSM',      purpose:'Cardiac surgery batch #7 — 38 children', date:'Apr 28', status:'paid', amount:165000000 },
+              { ref:'WD-9217', to:'CCBRT Charity Hospital',      purpose:'Cardiac surgery batch #6 — 52 children', date:'Apr 21', status:'paid', amount:195000000 },
+            ].map((w,i) => (
+              <tr key={i}>
+                <td><span style={{fontFamily:'var(--mono)',fontSize:11,color:'var(--muted)'}}>{w.ref}</span></td>
+                <td style={{fontWeight:600}}>{w.to}</td>
+                <td style={{fontSize:12,color:'var(--muted)'}}>{w.purpose}</td>
+                <td style={{color:'var(--muted)',fontSize:12}}>{w.date}</td>
+                <td><span style={{fontSize:11,padding:'3px 8px',borderRadius:6,fontWeight:600,background:'rgba(21,184,148,0.15)',color:'var(--teal-2)'}}>{w.status}</span></td>
+                <td className="amount-cell">TZS {fmtTZSFull(w.amount)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+function AnalyticsPage() {
+  return (
+    <div>
+      <div className="pageHead">
+        <div>
+          <div className="crumb">Moyo · Heart Surgery Fund</div>
+          <h1>Campaign <em>Analytics</em></h1>
+          <div className="sub">Deep insights into contribution patterns and reach across Tanzania and beyond.</div>
+        </div>
+      </div>
+      <div className="grid-3">
+        <div className="card"><div className="card-head"><div><h3>By region</h3><div className="sub">Contributions per region</div></div></div>
+          <div style={{marginTop:4}}>
+            {geoData.map((g,i) => {
+              const max = Math.max(...geoData.map(x => x.value));
+              return (<div className="geo-row" key={i}>
+                <span className="flag">{g.flag}</span>
+                <span className="nm">{g.name}</span>
+                <div className="bar-w"><div className="bar-f" style={{width:(g.value/max)*100+'%'}}></div></div>
+                <span className="v">{fmtTZS(g.value)}</span>
+              </div>);
+            })}
+          </div>
+        </div>
+        <div className="card"><div className="card-head"><div><h3>By channel</h3><div className="sub">Payment method breakdown</div></div></div>
+          <div className="channel-list">
+            {channelData.map((c,i) => (<div className="channel-row" key={i}><span className="channel-pip" style={{background:c.color}}></span><span className="nm">{c.name}</span><span className="v">{fmtTZS(c.value)}</span><span className="pct">{c.pct}%</span></div>))}
+          </div>
+        </div>
+        <div className="card"><div className="card-head"><div><h3>Contribution size</h3><div className="sub">Distribution of individual contributions</div></div></div>
+          <ChartCanvas type="bar" height={220}
+            data={{ labels:['< 10K','10–50K','50–200K','200K–1M','> 1M'], datasets:[{data:[2841,4218,3102,1987,699], backgroundColor:'#15B894', borderRadius:{topLeft:5,topRight:5,bottomLeft:0,bottomRight:0}, borderSkipped:false, maxBarThickness:32}]}}
+            options={{ responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}, tooltip:{...baseTooltip, callbacks:{label:ctx=>ctx.raw.toLocaleString()+' contributors'}}}, scales:{y:{...baseAxis},x:{...baseAxis,grid:{display:false}}}}}
+          />
+        </div>
+      </div>
+      <div className="card">
+        <div className="card-head"><div><h3>14-day contributions trend</h3><div className="sub">Daily totals across all channels</div></div></div>
+        <ChartCanvas type="line" height={260}
+          data={{ labels:dailyData.map(d=>d.d), datasets:[{data:dailyData.map(d=>d.v), borderColor:'#15B894', borderWidth:2.5, tension:0.35, fill:true, backgroundColor:ctx=>{const c=ctx.chart.ctx;const g=c.createLinearGradient(0,0,0,260);g.addColorStop(0,'rgba(21,184,148,0.32)');g.addColorStop(1,'rgba(21,184,148,0)');return g;}, pointRadius:0, pointHoverRadius:5, pointHoverBackgroundColor:'#15B894', pointHoverBorderColor:'#fff', pointHoverBorderWidth:2}]}}
+          options={{ responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}, tooltip:{...baseTooltip, callbacks:{label:ctx=>'TZS '+fmtTZS(ctx.raw)}}}, scales:{y:{...baseAxis,ticks:{...baseAxis.ticks,callback:v=>fmtTZS(v)}},x:{...baseAxis,grid:{display:false}}}, interaction:{intersect:false,mode:'index'}}}
+        />
+      </div>
+    </div>
+  );
+}
+
+function ReportsPage() {
+  const reports = [
+    { name: 'Weekly Summary — Week 18', date: 'May 05, 2026', size: '284 KB', type: 'PDF' },
+    { name: 'Weekly Summary — Week 17', date: 'Apr 28, 2026', size: '271 KB', type: 'PDF' },
+    { name: 'Monthly Report — April 2026', date: 'May 01, 2026', size: '1.2 MB', type: 'PDF' },
+    { name: 'Contributor Export — Apr 2026', date: 'May 01, 2026', size: '892 KB', type: 'CSV' },
+    { name: 'Disbursement Audit — Q1 2026', date: 'Apr 01, 2026', size: '548 KB', type: 'PDF' },
+    { name: 'Regional Breakdown — Apr 2026', date: 'May 01, 2026', size: '340 KB', type: 'XLSX' },
+  ];
+  return (
+    <div>
+      <div className="pageHead">
+        <div>
+          <div className="crumb">Moyo · Heart Surgery Fund</div>
+          <h1>Campaign <em>Reports</em></h1>
+          <div className="sub">Downloadable reports for auditing, partners, and medical institutions.</div>
+        </div>
+        <div className="head-actions">
+          <button className="btn btn-ghost" onClick={() => window.print()}>Print Report</button>
+        </div>
+      </div>
+      <div className="card">
+        <div className="card-head"><div><h3>Available reports</h3><div className="sub">Generated automatically at the end of each period</div></div></div>
+        <table className="table">
+          <thead><tr><th>Report name</th><th>Generated</th><th>Format</th><th>Size</th><th style={{textAlign:'center'}}>Action</th></tr></thead>
+          <tbody>
+            {reports.map((r,i) => (
+              <tr key={i}>
+                <td style={{fontWeight:600}}>{r.name}</td>
+                <td style={{color:'var(--muted)',fontSize:12}}>{r.date}</td>
+                <td><span style={{fontSize:11,padding:'3px 8px',borderRadius:6,fontWeight:600,background:'var(--bg)',border:'1px solid var(--line)'}}>{r.type}</span></td>
+                <td style={{color:'var(--muted)',fontSize:12,fontFamily:'var(--mono)'}}>{r.size}</td>
+                <td style={{textAlign:'center'}}><button className="btn btn-ghost" style={{padding:'6px 12px',fontSize:11}}>Download</button></td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+function SettingsPage() {
+  return (
+    <div>
+      <div className="pageHead">
+        <div>
+          <div className="crumb">Moyo · Heart Surgery Fund</div>
+          <h1>Campaign <em>Settings</em></h1>
+          <div className="sub">Manage campaign details, notifications, and authorised administrators.</div>
+        </div>
+      </div>
+      <div className="grid-2">
+        <div className="card">
+          <div className="card-head"><div><h3>Campaign info</h3><div className="sub">Basic details shown on the public page</div></div></div>
+          {[['Campaign name','Moyo — Children Cardiac Surgery Fund'],['Cause category','Medical · Paediatric Cardiac Care'],['Organisation','Moyo Foundation (Verified)'],['Goal amount','TZS 2,500,000,000'],['Campaign end','June 30, 2026'],['Public URL','chapaa.tz/moyo']].map(([l,v],i)=>(
+            <div key={i} style={{display:'flex',justifyContent:'space-between',alignItems:'center',padding:'12px 0',borderBottom:'1px solid var(--line-2)'}}>
+              <span style={{fontSize:12,color:'var(--muted)',fontWeight:500}}>{l}</span>
+              <span style={{fontSize:13,fontWeight:600,color:'var(--ink)'}}>{v}</span>
+            </div>
+          ))}
+          <button className="btn btn-dark" style={{marginTop:16,width:'100%',justifyContent:'center'}}>Edit campaign details</button>
+        </div>
+        <div className="card">
+          <div className="card-head"><div><h3>Authorised admins</h3><div className="sub">Admins can view and initiate disbursements</div></div></div>
+          {[{nm:'Moyo Foundation',role:'Owner · Super admin',av:'MF',vc:1},{nm:'Dr. Amina Seif',role:'Medical director',av:'AS',vc:2},{nm:'James Omondi',role:'Finance officer',av:'JO',vc:3}].map((a,i)=>(
+            <div key={i} className="contrib" style={{padding:'12px 0',borderBottom:'1px solid var(--line-2)'}}>
+              <div className={'contrib-avatar v'+a.vc}>{a.av}</div>
+              <div style={{flex:1}}><div className="contrib-name">{a.nm}</div><div className="contrib-meta">{a.role}</div></div>
+              {i>0 && <button className="btn btn-ghost" style={{padding:'5px 10px',fontSize:11}}>Remove</button>}
+            </div>
+          ))}
+          <button className="btn btn-ghost" style={{marginTop:16,width:'100%',justifyContent:'center'}}>+ Invite admin</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// =================== DASHBOARD ===================
+function Dashboard({ onOpenWithdraw }) {
+  const [range, setRange] = useState('14d');
+  const [contribFilter, setContribFilter] = useState('all');
+  const [activePage, setActivePage] = useState('overview');
+
+  const navItem = (page, icon, label, badge) => (
+    <div className={'nav-item ' + (activePage===page?'active':'')} onClick={()=>setActivePage(page)} style={{cursor:'pointer'}}>
+      {icon}
+      {label}{badge && <span className="nav-badge">{badge}</span>}
+    </div>
+  );
+
+  return (
+    <div className="dash-wrap">
+      {/* SIDEBAR */}
+      <aside className="sidebar">
+        <div className="brand">
+          <div className="brand-mark"><Logo /></div>
+          <div className="brand-text">
+            <div className="nm">Chapaa</div>
+            <div className="sub">Partner Console</div>
+          </div>
+        </div>
+
+        <div className="nav-section">
+          <div className="nav-label">Campaign</div>
+          {navItem('overview',<svg className="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>,'Overview')}
+          {navItem('transactions',<svg className="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M3 12h4l3-9 4 18 3-9h4"/></svg>,'Live Transactions','12')}
+          {navItem('contributors',<svg className="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>,'Contributors')}
+          {navItem('withdrawals',<svg className="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M12 2v20M2 12h20"/></svg>,'Disbursements')}
+        </div>
+
+        <div className="nav-section">
+          <div className="nav-label">Insights</div>
+          {navItem('analytics',<svg className="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M3 3v18h18"/><path d="M7 14l4-4 4 4 5-5"/></svg>,'Analytics')}
+          {navItem('reports',<svg className="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/></svg>,'Reports')}
+          {navItem('settings',<svg className="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h0a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51h0a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v0a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>,'Settings')}
+        </div>
+
+        <div className="sidebar-foot">
+          <div className="avatar">MF</div>
+          <div>
+            <div className="nm">Moyo Foundation</div>
+            <div className="role">Verified partner</div>
+          </div>
+        </div>
+      </aside>
+
+      {/* MAIN */}
+      <main className="main">
+        {activePage === 'transactions' && <LiveTransactions />}
+        {activePage === 'contributors' && <ContributorsPage />}
+        {activePage === 'withdrawals'  && <WithdrawalsPage onOpenWithdraw={onOpenWithdraw} />}
+        {activePage === 'analytics'    && <AnalyticsPage />}
+        {activePage === 'reports'      && <ReportsPage />}
+        {activePage === 'settings'     && <SettingsPage />}
+        {activePage === 'overview' && <>
+        <div className="pageHead">
+          <div>
+            <div className="crumb">Moyo · Children Cardiac Surgery Fund</div>
+            <h1>Every shilling, <em>a child's heartbeat</em></h1>
+            <div className="sub">Live overview of contributions to the Moyo fund for children with heart disease — each contribution funds life-saving cardiac surgery.</div>
+          </div>
+          <div className="head-actions">
+            <button className="btn btn-ghost" onClick={() => window.print()}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+              Print Report
+            </button>
+            <button className="btn btn-ghost">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              Export CSV
+            </button>
+            <button className="btn btn-teal" onClick={onOpenWithdraw}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/></svg>
+              Withdraw Funds
+            </button>
+          </div>
+        </div>
+
+        {/* HERO KPI */}
+        <div className="kpi-hero">
+          <div className="hero-main">
+            <div className="label"><span className="dot"></span>Live Campaign</div>
+            <div className="big-amount"><span className="cur">TZS</span>{fmtTZSFull(RAISED)}</div>
+            <div className="of">raised of <b>TZS {fmtTZS(GOAL)}</b> goal</div>
+            <div className="progress-wrap">
+              <div className="progress-bar"><div className="progress-fill" style={{width: PCT + '%'}}></div></div>
+              <div className="progress-meta">
+                <span>{PCT.toFixed(1)}% complete</span>
+                <span>{DAYS_LEFT} days remaining</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="hero-stat">
+            <div className="lbl">Contributors</div>
+            <div className="val">{CONTRIBUTORS.toLocaleString()}</div>
+            <div className="delta delta-up">↑ 12.4% this week</div>
+          </div>
+
+          <div className="hero-stat">
+            <div className="lbl">Avg. Contribution</div>
+            <div className="val">143K</div>
+            <div className="delta delta-up">↑ 8.2% vs last week</div>
+          </div>
+
+          <div className="hero-stat">
+            <div className="lbl">Today</div>
+            <div className="val">102.4M</div>
+            <div className="delta delta-up">↑ 14 transactions / hr</div>
+          </div>
+        </div>
+
+        {/* GRID 2 */}
+        <div className="grid-2">
+          {/* CHART */}
+          <div className="card">
+            <div className="card-head">
+              <div>
+                <h3>Collections trend</h3>
+                <div className="sub">Daily contributions across all channels</div>
+              </div>
+              <div className="seg">
+                <button className={range==='7d'?'active':''}  onClick={() => setRange('7d')}>7D</button>
+                <button className={range==='14d'?'active':''} onClick={() => setRange('14d')}>14D</button>
+                <button className={range==='30d'?'active':''} onClick={() => setRange('30d')}>30D</button>
+                <button className={range==='all'?'active':''} onClick={() => setRange('all')}>All</button>
+              </div>
+            </div>
+            <ChartCanvas
+              type="line"
+              height={280}
+              data={{
+                labels: dailyData.map(d => d.d),
+                datasets: [{
+                  data: dailyData.map(d => d.v),
+                  borderColor: '#15B894',
+                  borderWidth: 2.5,
+                  tension: 0.35,
+                  fill: true,
+                  backgroundColor: ctx => {
+                    const c = ctx.chart.ctx;
+                    const g = c.createLinearGradient(0, 0, 0, 280);
+                    g.addColorStop(0, 'rgba(21,184,148,0.32)');
+                    g.addColorStop(1, 'rgba(21,184,148,0)');
+                    return g;
+                  },
+                  pointRadius: 0,
+                  pointHoverRadius: 5,
+                  pointHoverBackgroundColor: '#15B894',
+                  pointHoverBorderColor: '#fff',
+                  pointHoverBorderWidth: 2,
+                }]
+              }}
+              options={{
+                responsive: true, maintainAspectRatio: false,
+                plugins: {
+                  legend: { display: false },
+                  tooltip: {
+                    ...baseTooltip,
+                    callbacks: { label: ctx => 'TZS ' + fmtTZS(ctx.raw) }
+                  }
+                },
+                scales: {
+                  y: { ...baseAxis, ticks: { ...baseAxis.ticks, callback: v => fmtTZS(v) } },
+                  x: { ...baseAxis, grid: { display: false } }
+                },
+                interaction: { intersect: false, mode: 'index' }
+              }}
+            />
+          </div>
+
+          {/* WITHDRAW */}
+          <div className="withdraw-card">
+            <div className="lbl">Available to Withdraw</div>
+            <div className="avail"><span className="cur">TZS</span>{fmtTZSFull(AVAILABLE)}</div>
+            <div className="desc">Net of {fmtTZS(WITHDRAWN)} TZS already disbursed</div>
+            <button className="btn btn-teal" onClick={onOpenWithdraw}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M12 2v20M5 9l7-7 7 7"/></svg>
+              Initiate Withdrawal
+            </button>
+            <div className="recent">
+              <div style={{ fontSize: 10, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.55)', fontWeight: 600, marginBottom: 8 }}>Recent payouts</div>
+              {recentWithdrawals.map((w, i) => (
+                <div className="recent-row" key={i}>
+                  <div>
+                    <span className="r">{fmtTZS(w.amount)}</span>
+                    <span className={'badge ' + (w.status === 'paid' ? 'badge-paid' : 'badge-pend')}>{w.status}</span>
+                  </div>
+                  <div className="l">{w.date} · {w.ref}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* GRID 3 */}
+        <div className="grid-3">
+          {/* CHANNEL */}
+          <div className="card">
+            <div className="card-head">
+              <div>
+                <h3>By channel</h3>
+                <div className="sub">Payment method distribution</div>
+              </div>
+            </div>
+            <div style={{ width: '100%', height: 160, position: 'relative' }}>
+              <ChartCanvas
+                type="doughnut"
+                height={160}
+                data={{
+                  labels: channelData.map(c => c.name),
+                  datasets: [{
+                    data: channelData.map(c => c.value),
+                    backgroundColor: channelData.map(c => c.color),
+                    borderWidth: 0,
+                    spacing: 2,
+                  }]
+                }}
+                options={{
+                  responsive: true, maintainAspectRatio: false,
+                  cutout: '64%',
+                  plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                      ...baseTooltip,
+                      callbacks: { label: ctx => 'TZS ' + fmtTZS(ctx.raw) }
+                    }
+                  }
+                }}
+              />
+              <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', textAlign: 'center', pointerEvents: 'none' }}>
+                <div style={{ fontFamily: 'var(--sans)', fontSize: 22, lineHeight: 1.1, letterSpacing: '-0.02em', fontWeight: 700 }}>5</div>
+                <div style={{ fontSize: 10, color: 'var(--muted)', letterSpacing: '0.12em', textTransform: 'uppercase', marginTop: 2 }}>Channels</div>
+              </div>
+            </div>
+            <div className="channel-list">
+              {channelData.map((c, i) => (
+                <div className="channel-row" key={i}>
+                  <span className="channel-pip" style={{ background: c.color }}></span>
+                  <span className="nm">{c.name}</span>
+                  <span className="v">{fmtTZS(c.value)}</span>
+                  <span className="pct">{c.pct}%</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* GEO */}
+          <div className="card">
+            <div className="card-head">
+              <div>
+                <h3>By region</h3>
+                <div className="sub">Where contributions originate</div>
+              </div>
+            </div>
+            <div style={{ marginTop: 4 }}>
+              {geoData.map((g, i) => {
+                const max = Math.max(...geoData.map(x => x.value));
+                return (
+                  <div className="geo-row" key={i} style={{borderBottom:'1px solid var(--line-2)',paddingBottom:9}}>
+                    <span className="flag">{g.flag}</span>
+                    <span className="nm">{g.name}</span>
+                    <div className="bar-w"><div className="bar-f" style={{ width: (g.value/max)*100 + '%' }}></div></div>
+                    <span className="v" style={{minWidth:52}}>{fmtTZS(g.value)}</span>
+                    <span style={{fontSize:10,color:'var(--muted)',minWidth:30,textAlign:'right',fontFamily:'var(--mono)'}}>{g.pct}%</span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* DAILY DONORS */}
+          <div className="card">
+            <div className="card-head">
+              <div>
+                <h3>Daily donors</h3>
+                <div className="sub">New contributors per day</div>
+              </div>
+            </div>
+            <ChartCanvas
+              type="bar"
+              height={220}
+              data={{
+                labels: dailyData.slice(-7).map(d => d.d),
+                datasets: [{
+                  data: dailyData.slice(-7).map(d => d.donors),
+                  backgroundColor: '#0B1330',
+                  borderRadius: { topLeft: 5, topRight: 5, bottomLeft: 0, bottomRight: 0 },
+                  borderSkipped: false,
+                  maxBarThickness: 26,
+                }]
+              }}
+              options={{
+                responsive: true, maintainAspectRatio: false,
+                plugins: {
+                  legend: { display: false },
+                  tooltip: {
+                    ...baseTooltip,
+                    callbacks: { label: ctx => ctx.raw + ' donors' }
+                  }
+                },
+                scales: {
+                  y: { ...baseAxis, ticks: { ...baseAxis.ticks, font: { ...baseAxis.ticks.font, size: 10 } } },
+                  x: { ...baseAxis, grid: { display: false }, ticks: { ...baseAxis.ticks, font: { ...baseAxis.ticks.font, size: 10 } } }
+                }
+              }}
+            />
+          </div>
+        </div>
+
+        {/* CONTRIBUTORS TABLE */}
+        <div className="card">
+          <div className="card-head">
+            <div>
+              <h3>Recent contributors</h3>
+              <div className="sub">Latest contributions received across all payment channels</div>
+            </div>
+            <div className="seg">
+              <button className={contribFilter==='all'?'active':''}     onClick={() => setContribFilter('all')}>All</button>
+              <button className={contribFilter==='mpesa'?'active':''}   onClick={() => setContribFilter('mpesa')}>M-Pesa</button>
+              <button className={contribFilter==='bank'?'active':''}    onClick={() => setContribFilter('bank')}>Bank</button>
+              <button className={contribFilter==='major'?'active':''}   onClick={() => setContribFilter('major')}>Major gifts</button>
+            </div>
+          </div>
+          <table className="table">
+            <thead>
+              <tr>
+                <th>Contributor</th>
+                <th>Channel</th>
+                <th>Contributions</th>
+                <th>Time</th>
+                <th>Amount</th>
+              </tr>
+            </thead>
+            <tbody>
+              {contributors.map(c => (
+                <tr key={c.id}>
+                  <td>
+                    <div className="contrib">
+                      <div className={'contrib-avatar v' + c.vc}>{c.avatar}</div>
+                      <div>
+                        <div className="contrib-name">{c.name}</div>
+                        <div className="contrib-meta">{c.handle}</div>
+                      </div>
+                    </div>
+                  </td>
+                  <td>
+                    <span className="channel-tag"><span className="pip" style={{ background: c.color }}></span>{c.channel}</span>
+                  </td>
+                  <td>{c.count}</td>
+                  <td style={{ color: 'var(--muted)' }}>{c.when}</td>
+                  <td className="amount-cell">TZS {fmtTZSFull(c.amount)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        </>}
+      </main>
+    </div>
+  );
+}
+
+// =================== WITHDRAW MODAL ===================
+function WithdrawModal({ open, onClose }) {
+  const [step, setStep] = useState(1);
+  const [amount, setAmount] = useState('500000000');
+  const [channel, setChannel] = useState('nmb');
+  const [otp, setOtp] = useState(['','','','','','']);
+  const [refCode] = useState('WD-' + Math.floor(9000 + Math.random()*999));
+
+  useEffect(() => {
+    if (open) { setStep(1); setOtp(['','','','','','']); }
+  }, [open]);
+
+  if (!open) return null;
+
+  const FEE = 0.005;
+  const amt = parseInt(amount || 0);
+  const fee = Math.round(amt * FEE);
+  const net = amt - fee;
+
+  const channels = [
+    { id: 'nmb',   name: 'NMB Bank',     acct: '****  2841',    icon: 'N', color: '#FFB800', tx: '#1A1A1A' },
+    { id: 'crdb',  name: 'CRDB Bank',    acct: '****  9173',    icon: 'C', color: '#00A859', tx: '#fff' },
+    { id: 'mpesa', name: 'M-Pesa',       acct: '+255 *** 4421', icon: 'M', color: '#E60000', tx: '#fff' },
+    { id: 'tigo',  name: 'Tigo Pesa',    acct: '+255 *** 7805', icon: 'T', color: '#0066CC', tx: '#fff' },
+  ];
+  const sel = channels.find(c => c.id === channel);
+
+  const onOtpChange = (i, v) => {
+    if (!/^\d*$/.test(v)) return;
+    const next = [...otp]; next[i] = v.slice(-1); setOtp(next);
+    if (v && i < 5) {
+      const el = document.getElementById('otp-' + (i+1));
+      el && el.focus();
+    }
+  };
+  const otpFull = otp.every(x => x);
+
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal" onClick={e => e.stopPropagation()}>
+        <div className="modal-head">
+          <div>
+            <h3>{step < 4 ? 'Withdraw funds' : 'Withdrawal initiated'}</h3>
+            {step < 4 && <div className="step" style={{ marginTop: 4 }}>Step {step} of 3</div>}
+          </div>
+          <button className="modal-close" onClick={onClose}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>
+        </div>
+
+        {step < 4 && (
+          <div className="step-track">
+            <div className={'seg-bar ' + (step >= 1 ? (step === 1 ? 'active' : 'done') : '')}></div>
+            <div className={'seg-bar ' + (step >= 2 ? (step === 2 ? 'active' : 'done') : '')}></div>
+            <div className={'seg-bar ' + (step >= 3 ? (step === 3 ? 'active' : 'done') : '')}></div>
+          </div>
+        )}
+
+        <div className="modal-body">
+          {step === 1 && (
+            <>
+              <div className="field">
+                <label>Available balance</label>
+                <div style={{ fontFamily: 'var(--sans)', fontSize: 28, color: 'var(--ink)', letterSpacing: '-0.02em', fontWeight: 700 }}>
+                  TZS {fmtTZSFull(AVAILABLE)}
+                </div>
+              </div>
+              <div className="field">
+                <label>Amount to withdraw</label>
+                <div className="input-prefix">
+                  <span className="pf">TZS</span>
+                  <input type="text" value={amt.toLocaleString()} onChange={e => setAmount(e.target.value.replace(/\D/g,''))}/>
+                </div>
+              </div>
+              <div className="field">
+                <label>Disbursement to</label>
+                <div className="channel-grid">
+                  {channels.map(c => (
+                    <div key={c.id} className={'channel-opt ' + (channel === c.id ? 'selected' : '')} onClick={() => setChannel(c.id)}>
+                      <div className="ico-box" style={{ background: c.color, color: c.tx }}>{c.icon}</div>
+                      <div>
+                        <div className="nm">{c.name}</div>
+                        <div className="acct">{c.acct}</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </>
+          )}
+
+          {step === 2 && (
+            <>
+              <div style={{ marginBottom: 16, fontSize: 13, color: 'var(--muted)' }}>
+                Please review the details below. Once confirmed, an OTP will be sent to your registered admin phone.
+              </div>
+              <div className="summary-box">
+                <div className="summary-row"><span className="l">Withdrawal amount</span><span className="r">TZS {fmtTZSFull(amt)}</span></div>
+                <div className="summary-row"><span className="l">Platform fee (0.5%)</span><span className="r">– TZS {fmtTZSFull(fee)}</span></div>
+                <div className="summary-row"><span className="l">Disbursement to</span><span className="r" style={{ fontFamily: 'var(--sans)' }}>{sel.name} {sel.acct}</span></div>
+                <div className="summary-row"><span className="l">Estimated arrival</span><span className="r" style={{ fontFamily: 'var(--sans)' }}>Within 2 hours</span></div>
+                <div className="summary-row total"><span className="l">Net to receive</span><span className="r">TZS {fmtTZSFull(net)}</span></div>
+              </div>
+              <div style={{ marginTop: 14, padding: '11px 14px', background: 'var(--teal-soft)', borderRadius: 10, fontSize: 12, color: 'var(--green-deep)', display: 'flex', gap: 9, alignItems: 'flex-start' }}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ flexShrink: 0, marginTop: 1 }}><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                <span>Withdrawals over TZS 100M require co-approval from a second authorised admin within 30 minutes.</span>
+              </div>
+            </>
+          )}
+
+          {step === 3 && (
+            <>
+              <div style={{ textAlign: 'center', marginBottom: 18 }}>
+                <div style={{ width: 48, height: 48, borderRadius: 12, background: 'var(--teal-soft)', color: 'var(--teal)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', marginBottom: 12 }}>
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                </div>
+                <h4 style={{ fontFamily: 'var(--sans)', fontSize: 20, lineHeight: 1.2, fontWeight: 700, letterSpacing: '-0.015em' }}>Verify with 2FA</h4>
+                <p style={{ color: 'var(--muted)', fontSize: 13, marginTop: 6 }}>We've sent a 6-digit code to <b style={{ color: 'var(--ink)' }}>+255 *** 4421</b></p>
+              </div>
+              <div className="otp-grid">
+                {otp.map((v, i) => (
+                  <input key={i} id={'otp-'+i} value={v}
+                    onChange={e => onOtpChange(i, e.target.value)}
+                    onKeyDown={e => { if (e.key==='Backspace' && !v && i>0) { const el = document.getElementById('otp-'+(i-1)); el && el.focus(); }}}
+                    inputMode="numeric" maxLength={1}/>
+                ))}
+              </div>
+              <div className="otp-help">Didn't get the code? <a>Resend in 0:42</a></div>
+            </>
+          )}
+
+          {step === 4 && (
+            <div className="success-box">
+              <div className="success-icon">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#04372C" strokeWidth="3"><polyline points="20 6 9 17 4 12"/></svg>
+              </div>
+              <h4>Withdrawal initiated</h4>
+              <p>TZS {fmtTZSFull(net)} is on its way to <b style={{ color: 'var(--ink)' }}>{sel.name} {sel.acct}</b>.<br/>You'll get a confirmation SMS once it lands.</p>
+              <div className="ref-box">
+                <span className="l">Reference</span>
+                <span className="r">{refCode}</span>
+              </div>
+            </div>
+          )}
+        </div>
+
+        <div className="modal-foot">
+          {step === 1 && (
+            <>
+              <button className="btn btn-ghost" onClick={onClose}>Cancel</button>
+              <button className="btn btn-dark" onClick={() => setStep(2)} disabled={!amt}>Continue</button>
+            </>
+          )}
+          {step === 2 && (
+            <>
+              <button className="btn btn-ghost" onClick={() => setStep(1)}>Back</button>
+              <button className="btn btn-dark" onClick={() => setStep(3)}>Send verification code</button>
+            </>
+          )}
+          {step === 3 && (
+            <>
+              <button className="btn btn-ghost" onClick={() => setStep(2)}>Back</button>
+              <button className="btn btn-teal" onClick={() => setStep(4)} disabled={!otpFull}>Verify & withdraw</button>
+            </>
+          )}
+          {step === 4 && (
+            <button className="btn btn-dark" onClick={onClose} style={{ marginLeft: 'auto' }}>Done</button>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// =================== PUBLIC PAGE ===================
+function PublicPage() {
+  const topDonors = contributors.filter(c => c.name !== 'Anonymous Donor').slice(0, 8);
+
+  return (
+    <div className="pub-wrap">
+      <nav className="pub-nav">
+        <div className="brand">
+          <div className="brand-mark"><Logo /></div>
+          <div className="brand-text">
+            <div className="nm" style={{ color: 'var(--ink)' }}>Chapaa</div>
+            <div className="sub" style={{ color: 'var(--teal)' }}>Moyo</div>
+          </div>
+        </div>
+        <div className="nav-links">
+          <a>About</a><a>Campaign</a><a>Updates</a><a>Donors</a>
+        </div>
+        <button className="btn btn-teal">Support a child</button>
+      </nav>
+
+      <section className="pub-hero">
+        <div className="pub-hero-inner">
+          <div>
+            <div className="tag"><span className="live-dot"></span>Live · Updated 2 mins ago</div>
+            <h1>For children whose <em>hearts need help.</em></h1>
+            <p className="lede">
+              Moyo is a nationwide cause funding life-saving cardiac surgery for Tanzanian children born with heart disease. Every contribution — however small — brings another child closer to a healthy heartbeat.
+            </p>
+            <div style={{ display: 'flex', gap: 10, marginTop: 28 }}>
+              <button className="btn btn-teal" style={{ padding: '13px 22px' }}>Support a child</button>
+              <button className="btn" style={{ background: 'rgba(255,255,255,0.08)', color: '#fff', backdropFilter: 'blur(8px)', padding: '13px 22px' }}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                Watch story
+              </button>
+            </div>
+          </div>
+
+          <div className="pub-stats">
+            <div className="lbl">Total raised so far</div>
+            <div className="raised"><span className="cur">TZS</span>{fmtTZSFull(RAISED)}</div>
+            <div className="of">of <b>TZS {fmtTZS(GOAL)}</b> goal</div>
+            <div className="progress-wrap">
+              <div className="progress-bar"><div className="progress-fill" style={{ width: PCT + '%' }}></div></div>
+              <div className="progress-meta">
+                <span>{PCT.toFixed(1)}% funded</span>
+                <span>{DAYS_LEFT} days left</span>
+              </div>
+            </div>
+            <div className="pub-mini-stats">
+              <div className="mini-stat">
+                <div className="v">{(CONTRIBUTORS/1000).toFixed(1)}K</div>
+                <div className="l">Contributors</div>
+              </div>
+              <div className="mini-stat">
+                <div className="v">142</div>
+                <div className="l">Children helped</div>
+              </div>
+              <div className="mini-stat">
+                <div className="v">{DAYS_LEFT}</div>
+                <div className="l">Days left</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="pub-section">
+        <div className="pub-section-inner">
+          <h2>Campaign <em>at a glance</em></h2>
+          <p className="sec-sub">Transparency is at the heart of Moyo. Every shilling is accounted for — updated in real time as new contributions arrive to fund children's cardiac surgeries.</p>
+
+          <div className="pub-cards-grid">
+            <div className="pub-stat-card">
+              <div className="ico-bg"></div>
+              <div className="ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg></div>
+              <div className="v">{(RAISED/1e9).toFixed(2)}B</div>
+              <div className="l">TZS raised</div>
+              <div className="delta">↑ 12.4% this week</div>
+            </div>
+            <div className="pub-stat-card">
+              <div className="ico-bg"></div>
+              <div className="ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
+              <div className="v">{CONTRIBUTORS.toLocaleString()}</div>
+              <div className="l">Caring contributors</div>
+              <div className="delta">↑ 487 this week</div>
+            </div>
+            <div className="pub-stat-card">
+              <div className="ico-bg"></div>
+              <div className="ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></div>
+              <div className="v">142</div>
+              <div className="l">Surgeries funded</div>
+              <div className="delta">3 this week</div>
+            </div>
+          </div>
+
+          <div className="pub-graph-grid">
+            <div className="card">
+              <div className="card-head">
+                <div>
+                  <h3>Daily contributions</h3>
+                  <div className="sub">Last 14 days</div>
+                </div>
+              </div>
+              <ChartCanvas
+                type="line"
+                height={280}
+                data={{
+                  labels: dailyData.map(d => d.d),
+                  datasets: [{
+                    data: dailyData.map(d => d.v),
+                    borderColor: '#15B894',
+                    borderWidth: 2.5,
+                    tension: 0.35,
+                    fill: true,
+                    backgroundColor: ctx => {
+                      const c = ctx.chart.ctx;
+                      const g = c.createLinearGradient(0, 0, 0, 280);
+                      g.addColorStop(0, 'rgba(21,184,148,0.32)');
+                      g.addColorStop(1, 'rgba(21,184,148,0)');
+                      return g;
+                    },
+                    pointRadius: 0,
+                    pointHoverRadius: 5,
+                    pointHoverBackgroundColor: '#15B894',
+                    pointHoverBorderColor: '#fff',
+                    pointHoverBorderWidth: 2,
+                  }]
+                }}
+                options={{
+                  responsive: true, maintainAspectRatio: false,
+                  plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                      ...baseTooltip,
+                      callbacks: { label: ctx => 'TZS ' + fmtTZS(ctx.raw) }
+                    }
+                  },
+                  scales: {
+                    y: { ...baseAxis, ticks: { ...baseAxis.ticks, callback: v => fmtTZS(v) } },
+                    x: { ...baseAxis, grid: { display: false } }
+                  },
+                  interaction: { intersect: false, mode: 'index' }
+                }}
+              />
+            </div>
+            <div className="card">
+              <div className="card-head">
+                <div>
+                  <h3>By region</h3>
+                  <div className="sub">Where contributions originate</div>
+                </div>
+              </div>
+              <div style={{ marginTop: 4 }}>
+                {geoData.map((g, i) => {
+                  const max = Math.max(...geoData.map(x => x.value));
+                  return (
+                    <div className="geo-row" key={i} style={{borderBottom:'1px solid var(--line-2)',paddingBottom:9}}>
+                      <span className="flag">{g.flag}</span>
+                      <span className="nm">{g.name}</span>
+                      <div className="bar-w"><div className="bar-f" style={{ width: (g.value/max)*100 + '%' }}></div></div>
+                      <span className="v" style={{minWidth:52}}>{fmtTZS(g.value)}</span>
+                      <span style={{fontSize:10,color:'var(--muted)',minWidth:30,textAlign:'right',fontFamily:'var(--mono)'}}>{g.pct}%</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="pub-section alt">
+        <div className="pub-section-inner">
+          <h2>Voices of <em>compassion</em></h2>
+          <p className="sec-sub">These are the people making children's heart surgeries possible. Every contribution here has a child's name behind it.</p>
+          <div className="donor-wall">
+            {topDonors.map(d => (
+              <div className="donor-tile" key={d.id}>
+                <div className={'contrib-avatar v' + d.vc}>{d.avatar}</div>
+                <div>
+                  <div className="nm">{d.name}</div>
+                  <div className="am">TZS {fmtTZS(d.amount)}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+          <div style={{ textAlign: 'center', marginTop: 36 }}>
+            <button className="btn btn-ghost" style={{ padding: '12px 22px' }}>View all contributors →</button>
+          </div>
+        </div>
+      </section>
+
+      <footer className="pub-footer">
+        <div className="pub-footer-inner">
+          <div className="brand">
+            <div className="brand-mark"><Logo /></div>
+            <div className="brand-text">
+              <div className="nm">Chapaa</div>
+              <div className="sub">Cause contributions for children</div>
+            </div>
+          </div>
+          <div className="links">
+            <a>Terms</a><a>Privacy</a><a>Contact</a><a>Press</a>
+          </div>
+          <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)' }}>© 2026 Chapaa · Powered by Moyo Foundation</div>
+        </div>
+      </footer>
+    </div>
+  );
+}
+
+// =================== APP ===================
+function App() {
+  const [view, setView] = useState('dashboard');
+  const [withdrawOpen, setWithdrawOpen] = useState(false);
+
+  return (
+    <>
+      <div className="view-switch">
+        <button className={view==='dashboard'?'active':''} onClick={() => setView('dashboard')}>Partner dashboard</button>
+        <button className={view==='public'?'active':''}    onClick={() => setView('public')}>Public page</button>
+      </div>
+      {view === 'dashboard'
+        ? <Dashboard onOpenWithdraw={() => setWithdrawOpen(true)}/>
+        : <PublicPage/>}
+      <WithdrawModal open={withdrawOpen} onClose={() => setWithdrawOpen(false)}/>
+    </>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+</script>
+
+</body>
+</html>

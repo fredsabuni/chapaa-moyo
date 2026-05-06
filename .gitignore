@@ -1,0 +1,7 @@
+# Videos
+*.webm
+*.mp4
+video-output/
+
+# Node
+node_modules/
