@@ -1,0 +1,968 @@
+{
+  "info": {
+    "name": "Chapaa Moyo API",
+    "_postman_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+    "description": "REST API specification for the Chapaa Moyo fundraising platform.\n\nBase URL: {{base_url}}\n\nAll protected endpoints require: Authorization: Bearer {{access_token}}\n\nAll amounts are in TZS (Tanzanian Shilling) as integers. No decimals.\n\nTimestamps are ISO 8601: 2026-05-07T10:42:00Z\n\nConsistent response envelope:\n  Success: { success: true, data: {...}, meta: {...} }\n  Error:   { success: false, error: { code: \"...\", message: \"...\" } }",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      { "key": "token", "value": "{{access_token}}", "type": "string" }
+    ]
+  },
+  "variable": [
+    { "key": "base_url",            "value": "https://api.chapaa.tz/v1",  "type": "string" },
+    { "key": "access_token",        "value": "",                           "type": "string" },
+    { "key": "refresh_token",       "value": "",                           "type": "string" },
+    { "key": "disbursement_id",     "value": "disb_9281",                  "type": "string" },
+    { "key": "payment_account_id",  "value": "acct_001",                   "type": "string" },
+    { "key": "admin_id",            "value": "admin_002",                  "type": "string" },
+    { "key": "report_id",           "value": "rpt_001",                    "type": "string" },
+    { "key": "campaign_slug",       "value": "moyo",                       "type": "string" }
+  ],
+  "item": [
+
+    {
+      "name": "🔐 Auth",
+      "item": [
+
+        {
+          "name": "Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const res = pm.response.json();",
+                  "if (res.success) {",
+                  "  pm.collectionVariables.set('access_token', res.data.access_token);",
+                  "  pm.collectionVariables.set('refresh_token', res.data.refresh_token);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"credential\": \"admin@moyo.tz\",\n  \"password\": \"moyo2026\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/login",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "login"]
+            },
+            "description": "Authenticate with email or phone number + password.\n\n`credential` accepts:\n- Email address: admin@moyo.tz\n- Phone (E.164): +255700000000\n- Phone (local): 0700000000\n\nReturns JWT access token (15min TTL) + refresh token (7 days TTL)."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": {
+                "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"credential\": \"admin@moyo.tz\",\n  \"password\": \"moyo2026\"\n}"
+                },
+                "url": { "raw": "{{base_url}}/auth/login" }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"access_token\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiYWRtaW4tMDAxIiwicm9sZSI6Im93bmVyIiwiaWF0IjoxNzQ2NjE3ODAwLCJleHAiOjE3NDY2MTg3MDB9.xyz\",\n    \"refresh_token\": \"rt_a1b2c3d4e5f6g7h8i9j0\",\n    \"token_type\": \"Bearer\",\n    \"expires_in\": 900,\n    \"user\": {\n      \"id\": \"admin-001\",\n      \"name\": \"Moyo Foundation\",\n      \"email\": \"admin@moyo.tz\",\n      \"phone\": \"+255700000000\",\n      \"role\": \"owner\",\n      \"avatar_initials\": \"MF\",\n      \"campaign_id\": \"campaign_moyo_2026\"\n    }\n  }\n}"
+            },
+            {
+              "name": "401 Invalid credentials",
+              "originalRequest": {
+                "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": { "mode": "raw", "raw": "{\n  \"credential\": \"admin@moyo.tz\",\n  \"password\": \"wrong\"\n}" },
+                "url": { "raw": "{{base_url}}/auth/login" }
+              },
+              "status": "Unauthorized",
+              "code": 401,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"success\": false,\n  \"error\": {\n    \"code\": \"INVALID_CREDENTIALS\",\n    \"message\": \"The email/phone or password is incorrect.\"\n  }\n}"
+            }
+          ]
+        },
+
+        {
+          "name": "Refresh Token",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refresh_token\": \"{{refresh_token}}\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/refresh",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "refresh"]
+            },
+            "description": "Exchange a valid refresh token for a new access token. Call this when the access token expires (401 response)."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": { "method": "POST", "url": { "raw": "{{base_url}}/auth/refresh" } },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"access_token\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.newtoken.xyz\",\n    \"expires_in\": 900\n  }\n}"
+            }
+          ]
+        },
+
+        {
+          "name": "Logout",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/auth/logout",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "logout"]
+            },
+            "description": "Invalidates the current refresh token server-side. Frontend should also clear stored tokens."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": { "method": "POST", "url": { "raw": "{{base_url}}/auth/logout" } },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"message\": \"Logged out successfully.\"\n  }\n}"
+            }
+          ]
+        }
+
+      ]
+    },
+
+    {
+      "name": "📊 Dashboard",
+      "item": [
+
+        {
+          "name": "Get Overview Stats",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/dashboard/overview",
+              "host": ["{{base_url}}"],
+              "path": ["dashboard", "overview"]
+            },
+            "description": "Returns all KPI stats shown on the Overview page: total raised, goal, available balance, contributors, today's total, etc."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": { "method": "GET", "url": { "raw": "{{base_url}}/dashboard/overview" } },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"campaign_id\": \"campaign_moyo_2026\",\n    \"raised\": 1842500000,\n    \"goal\": 2500000000,\n    \"pct_funded\": 73.7,\n    \"available\": 1156000000,\n    \"withdrawn\": 686500000,\n    \"contributors\": 12847,\n    \"days_left\": 47,\n    \"today_total\": 102400000,\n    \"today_transactions\": 967,\n    \"avg_contribution\": 143400,\n    \"transactions_per_hour\": 14,\n    \"weekly_growth_pct\": 12.4,\n    \"surgeries_funded\": 142\n  }\n}"
+            }
+          ]
+        }
+
+      ]
+    },
+
+    {
+      "name": "🏕️ Campaign",
+      "item": [
+
+        {
+          "name": "Get Campaign",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/campaign",
+              "host": ["{{base_url}}"],
+              "path": ["campaign"]
+            },
+            "description": "Returns the authenticated partner's campaign details."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": { "method": "GET", "url": { "raw": "{{base_url}}/campaign" } },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"id\": \"campaign_moyo_2026\",\n    \"slug\": \"moyo\",\n    \"name\": \"Moyo — Children Cardiac Surgery Fund\",\n    \"category\": \"Medical · Paediatric Cardiac Care\",\n    \"organisation\": \"Moyo Foundation\",\n    \"verified\": true,\n    \"goal\": 2500000000,\n    \"raised\": 1842500000,\n    \"end_date\": \"2026-06-30\",\n    \"public_url\": \"chapaa.tz/moyo\",\n    \"description\": \"Life-saving cardiac surgery for Tanzanian children born with heart disease.\",\n    \"created_at\": \"2026-01-01T00:00:00Z\",\n    \"updated_at\": \"2026-05-05T10:00:00Z\"\n  }\n}"
+            }
+          ]
+        },
+
+        {
+          "name": "Update Campaign",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Moyo — Children Cardiac Surgery Fund\",\n  \"description\": \"Life-saving cardiac surgery for Tanzanian children born with heart disease.\",\n  \"goal\": 2500000000,\n  \"end_date\": \"2026-06-30\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{base_url}}/campaign",
+              "host": ["{{base_url}}"],
+              "path": ["campaign"]
+            },
+            "description": "Update campaign details. Only fields included in the body are updated (partial update)."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": { "method": "PATCH", "url": { "raw": "{{base_url}}/campaign" } },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"id\": \"campaign_moyo_2026\",\n    \"name\": \"Moyo — Children Cardiac Surgery Fund\",\n    \"goal\": 2500000000,\n    \"end_date\": \"2026-06-30\",\n    \"updated_at\": \"2026-05-07T11:00:00Z\"\n  }\n}"
+            }
+          ]
+        }
+
+      ]
+    },
+
+    {
+      "name": "👥 Contributors",
+      "item": [
+
+        {
+          "name": "List Contributors",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/contributors?page=1&limit=20&channel=&region=&type=",
+              "host": ["{{base_url}}"],
+              "path": ["contributors"],
+              "query": [
+                { "key": "page",    "value": "1",  "description": "Page number (default: 1)" },
+                { "key": "limit",   "value": "20", "description": "Items per page (max: 100)" },
+                { "key": "channel", "value": "",   "description": "Filter: M-Pesa | Tigo Pesa | Airtel | Bank | Card" },
+                { "key": "region",  "value": "",   "description": "Filter: Dar es Salaam | Arusha | Mwanza | Dodoma | Kenya | Diaspora | ..." },
+                { "key": "type",    "value": "",   "description": "Filter: individual | corporate | anonymous" },
+                { "key": "sort",    "value": "",   "description": "Sort: latest | amount_desc | amount_asc | count_desc" }
+              ]
+            },
+            "description": "Paginated list of all contributors. Supports filtering by payment channel, region, and contributor type."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": { "method": "GET", "url": { "raw": "{{base_url}}/contributors?page=1&limit=20" } },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"success\": true,\n  \"data\": [\n    {\n      \"id\": \"ctb_001\",\n      \"name\": \"Amina Kirimi\",\n      \"handle\": \"@aminak\",\n      \"type\": \"individual\",\n      \"avatar_initials\": \"AK\",\n      \"channel\": \"M-Pesa\",\n      \"region\": \"Dar es Salaam\",\n      \"total_amount\": 5000000,\n      \"contribution_count\": 3,\n      \"last_contribution_at\": \"2026-05-07T10:40:00Z\",\n      \"is_anonymous\": false\n    },\n    {\n      \"id\": \"ctb_002\",\n      \"name\": \"Vodacom Foundation\",\n      \"handle\": \"Corporate contribution\",\n      \"type\": \"corporate\",\n      \"avatar_initials\": \"VF\",\n      \"channel\": \"Bank\",\n      \"region\": \"Dar es Salaam\",\n      \"total_amount\": 50000000,\n      \"contribution_count\": 1,\n      \"last_contribution_at\": \"2026-05-07T08:00:00Z\",\n      \"is_anonymous\": false\n    }\n  ],\n  \"meta\": {\n    \"page\": 1,\n    \"limit\": 20,\n    \"total\": 12847,\n    \"has_more\": true\n  }\n}"
+            }
+          ]
+        },
+
+        {
+          "name": "Get Contributor Stats",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/contributors/stats",
+              "host": ["{{base_url}}"],
+              "path": ["contributors", "stats"]
+            },
+            "description": "Aggregate statistics shown in the Contributors KPI hero: totals, first-time vs returning, corporate count."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": { "method": "GET", "url": { "raw": "{{base_url}}/contributors/stats" } },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"total\": 12847,\n    \"first_time\": 8241,\n    \"returning\": 4606,\n    \"corporate\": 47,\n    \"individual\": 12800,\n    \"anonymous\": 312,\n    \"countries\": 8,\n    \"weekly_new\": 487,\n    \"first_time_pct\": 64.2,\n    \"returning_pct\": 35.8\n  }\n}"
+            }
+          ]
+        }
+
+      ]
+    },
+
+    {
+      "name": "💳 Transactions",
+      "item": [
+
+        {
+          "name": "List Transactions",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/transactions?page=1&limit=20&status=&channel=",
+              "host": ["{{base_url}}"],
+              "path": ["transactions"],
+              "query": [
+                { "key": "page",    "value": "1",   "description": "Page number" },
+                { "key": "limit",   "value": "20",  "description": "Items per page (max: 100)" },
+                { "key": "status",  "value": "",    "description": "Filter: confirmed | pending | failed" },
+                { "key": "channel", "value": "",    "description": "Filter: M-Pesa | Tigo Pesa | Airtel | Bank | Card" },
+                { "key": "date_from", "value": "",  "description": "ISO date e.g. 2026-05-01" },
+                { "key": "date_to",   "value": "",  "description": "ISO date e.g. 2026-05-07" }
+              ]
+            },
+            "description": "Real-time paginated transaction feed. Poll or use WebSocket (ws://api.chapaa.tz/v1/transactions/live) for live updates."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": { "method": "GET", "url": { "raw": "{{base_url}}/transactions?page=1&limit=20" } },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"success\": true,\n  \"data\": [\n    {\n      \"id\": \"TX-8821\",\n      \"contributor_name\": \"Rehema Njau\",\n      \"contributor_id\": \"ctb_091\",\n      \"amount\": 500000,\n      \"channel\": \"M-Pesa\",\n      \"region\": \"Dar es Salaam\",\n      \"status\": \"confirmed\",\n      \"transacted_at\": \"2026-05-07T10:42:18Z\",\n      \"is_anonymous\": false\n    },\n    {\n      \"id\": \"TX-8820\",\n      \"contributor_name\": \"Anonymous\",\n      \"contributor_id\": null,\n      \"amount\": 2000000,\n      \"channel\": \"Bank\",\n      \"region\": \"Unknown\",\n      \"status\": \"confirmed\",\n      \"transacted_at\": \"2026-05-07T10:41:12Z\",\n      \"is_anonymous\": true\n    }\n  ],\n  \"meta\": {\n    \"page\": 1,\n    \"limit\": 20,\n    \"total\": 12847,\n    \"has_more\": true\n  }\n}"
+            }
+          ]
+        },
+
+        {
+          "name": "Get Transaction Stats",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/transactions/stats",
+              "host": ["{{base_url}}"],
+              "path": ["transactions", "stats"]
+            },
+            "description": "Live transaction summary stats for the dashboard header badge."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": { "method": "GET", "url": { "raw": "{{base_url}}/transactions/stats" } },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"today_total\": 102400000,\n    \"today_count\": 967,\n    \"last_hour_count\": 14,\n    \"last_hour_total\": 8200000,\n    \"pending_count\": 3,\n    \"failed_today\": 1\n  }\n}"
+            }
+          ]
+        }
+
+      ]
+    },
+
+    {
+      "name": "🏦 Disbursements",
+      "item": [
+
+        {
+          "name": "List Disbursements",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/disbursements?page=1&limit=20",
+              "host": ["{{base_url}}"],
+              "path": ["disbursements"],
+              "query": [
+                { "key": "page",   "value": "1",  "description": "Page number" },
+                { "key": "limit",  "value": "20", "description": "Items per page" },
+                { "key": "status", "value": "",   "description": "Filter: pending_otp | pending | paid | failed | cancelled" }
+              ]
+            },
+            "description": "Returns all disbursements for the campaign, newest first."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": { "method": "GET", "url": { "raw": "{{base_url}}/disbursements" } },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"success\": true,\n  \"data\": [\n    {\n      \"id\": \"disb_9281\",\n      \"reference\": \"WD-9281\",\n      \"amount\": 280000000,\n      \"fee\": 1400000,\n      \"net_amount\": 278600000,\n      \"status\": \"paid\",\n      \"payment_account_id\": \"acct_001\",\n      \"payment_account\": {\n        \"account_name\": \"Moyo Foundation\",\n        \"bank_name\": \"NMB Bank\",\n        \"account_number\": \"40710002841\"\n      },\n      \"purpose\": \"Cardiac surgery batch #8 — 52 children\",\n      \"initiated_by\": \"admin-001\",\n      \"initiated_at\": \"2026-05-03T09:00:00Z\",\n      \"confirmed_at\": \"2026-05-03T09:45:00Z\",\n      \"requires_co_approval\": true,\n      \"co_approved_by\": \"admin-002\"\n    }\n  ],\n  \"meta\": {\n    \"page\": 1,\n    \"limit\": 20,\n    \"total\": 3,\n    \"has_more\": false,\n    \"total_disbursed\": 640000000,\n    \"available\": 1156000000\n  }\n}"
+            }
+          ]
+        },
+
+        {
+          "name": "Initiate Disbursement",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const res = pm.response.json();",
+                  "if (res.success) {",
+                  "  pm.collectionVariables.set('disbursement_id', res.data.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"amount\": 50000000,\n  \"payment_account_id\": \"{{payment_account_id}}\",\n  \"purpose\": \"Cardiac surgery batch #9 — 30 children\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{base_url}}/disbursements",
+              "host": ["{{base_url}}"],
+              "path": ["disbursements"]
+            },
+            "description": "Creates a disbursement in `pending_otp` status. The frontend must then:\n1. Call POST /disbursements/:id/otp/send\n2. User enters OTP\n3. Call POST /disbursements/:id/otp/verify\n\nBusiness rules:\n- `amount` must be > 0 and ≤ available balance\n- `payment_account_id` must belong to this campaign\n- Disbursements > TZS 100,000,000 require co-approval from a second admin\n- OTP expires after 5 minutes"
+          },
+          "response": [
+            {
+              "name": "201 Created",
+              "originalRequest": { "method": "POST", "url": { "raw": "{{base_url}}/disbursements" } },
+              "status": "Created",
+              "code": 201,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"id\": \"disb_9282\",\n    \"reference\": \"WD-9282\",\n    \"amount\": 50000000,\n    \"fee\": 250000,\n    \"net_amount\": 49750000,\n    \"status\": \"pending_otp\",\n    \"payment_account_id\": \"acct_001\",\n    \"purpose\": \"Cardiac surgery batch #9 — 30 children\",\n    \"requires_co_approval\": false,\n    \"created_at\": \"2026-05-07T11:00:00Z\",\n    \"otp_expires_at\": \"2026-05-07T11:05:00Z\"\n  }\n}"
+            },
+            {
+              "name": "422 Insufficient balance",
+              "originalRequest": { "method": "POST", "url": { "raw": "{{base_url}}/disbursements" } },
+              "status": "Unprocessable Entity",
+              "code": 422,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"success\": false,\n  \"error\": {\n    \"code\": \"INSUFFICIENT_BALANCE\",\n    \"message\": \"Requested amount exceeds available balance of TZS 1,156,000,000.\",\n    \"available\": 1156000000\n  }\n}"
+            }
+          ]
+        },
+
+        {
+          "name": "Send Disbursement OTP",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/disbursements/{{disbursement_id}}/otp/send",
+              "host": ["{{base_url}}"],
+              "path": ["disbursements", "{{disbursement_id}}", "otp", "send"]
+            },
+            "description": "Sends a 6-digit OTP via SMS to the registered admin phone number. OTP is valid for 5 minutes. Can be called again to resend (rate limited: once per 60s)."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": { "method": "POST", "url": { "raw": "{{base_url}}/disbursements/{{disbursement_id}}/otp/send" } },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"message\": \"OTP sent to +255 *** 4421\",\n    \"expires_at\": \"2026-05-07T11:05:00Z\",\n    \"resend_available_at\": \"2026-05-07T11:01:00Z\"\n  }\n}"
+            }
+          ]
+        },
+
+        {
+          "name": "Verify Disbursement OTP & Confirm",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"otp\": \"847291\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{base_url}}/disbursements/{{disbursement_id}}/otp/verify",
+              "host": ["{{base_url}}"],
+              "path": ["disbursements", "{{disbursement_id}}", "otp", "verify"]
+            },
+            "description": "Verifies the OTP and executes the disbursement. On success, status changes to `pending` (processing) → `paid` (complete). After 3 failed attempts, the disbursement is cancelled."
+          },
+          "response": [
+            {
+              "name": "200 OK — Disbursement confirmed",
+              "originalRequest": { "method": "POST", "url": { "raw": "{{base_url}}/disbursements/{{disbursement_id}}/otp/verify" } },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"id\": \"disb_9282\",\n    \"reference\": \"WD-9282\",\n    \"status\": \"pending\",\n    \"net_amount\": 49750000,\n    \"message\": \"Disbursement confirmed. Funds are being processed.\",\n    \"estimated_arrival\": \"Within 2 hours\"\n  }\n}"
+            },
+            {
+              "name": "400 Invalid OTP",
+              "originalRequest": { "method": "POST", "url": { "raw": "{{base_url}}/disbursements/{{disbursement_id}}/otp/verify" } },
+              "status": "Bad Request",
+              "code": 400,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"success\": false,\n  \"error\": {\n    \"code\": \"INVALID_OTP\",\n    \"message\": \"Incorrect OTP. 2 attempts remaining.\",\n    \"attempts_remaining\": 2\n  }\n}"
+            }
+          ]
+        }
+
+      ]
+    },
+
+    {
+      "name": "🏛️ Payment Accounts",
+      "item": [
+
+        {
+          "name": "List Payment Accounts",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/payment-accounts",
+              "host": ["{{base_url}}"],
+              "path": ["payment-accounts"]
+            },
+            "description": "Returns all saved bank accounts for this campaign. These are the destination accounts for disbursements."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": { "method": "GET", "url": { "raw": "{{base_url}}/payment-accounts" } },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"success\": true,\n  \"data\": [\n    {\n      \"id\": \"acct_001\",\n      \"account_name\": \"Moyo Foundation\",\n      \"bank_name\": \"NMB Bank\",\n      \"account_number\": \"40710002841\",\n      \"branch\": \"Dar es Salaam Main\",\n      \"created_at\": \"2026-01-15T08:00:00Z\"\n    },\n    {\n      \"id\": \"acct_002\",\n      \"account_name\": \"Moyo Foundation\",\n      \"bank_name\": \"CRDB Bank\",\n      \"account_number\": \"01J1500009173\",\n      \"branch\": \"Kariakoo Branch\",\n      \"created_at\": \"2026-01-15T08:00:00Z\"\n    }\n  ]\n}"
+            }
+          ]
+        },
+
+        {
+          "name": "Add Payment Account",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const res = pm.response.json();",
+                  "if (res.success) {",
+                  "  pm.collectionVariables.set('payment_account_id', res.data.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"account_name\": \"Moyo Foundation\",\n  \"bank_name\": \"Stanbic Bank\",\n  \"account_number\": \"9920001234567\",\n  \"branch\": \"Ohio Street Branch\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{base_url}}/payment-accounts",
+              "host": ["{{base_url}}"],
+              "path": ["payment-accounts"]
+            },
+            "description": "Adds a new bank account to the campaign. Required fields: account_name, bank_name, account_number. Optional: branch."
+          },
+          "response": [
+            {
+              "name": "201 Created",
+              "originalRequest": { "method": "POST", "url": { "raw": "{{base_url}}/payment-accounts" } },
+              "status": "Created",
+              "code": 201,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"id\": \"acct_003\",\n    \"account_name\": \"Moyo Foundation\",\n    \"bank_name\": \"Stanbic Bank\",\n    \"account_number\": \"9920001234567\",\n    \"branch\": \"Ohio Street Branch\",\n    \"created_at\": \"2026-05-07T11:00:00Z\"\n  }\n}"
+            }
+          ]
+        },
+
+        {
+          "name": "Remove Payment Account",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/payment-accounts/{{payment_account_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["payment-accounts", "{{payment_account_id}}"]
+            },
+            "description": "Permanently removes a payment account. Returns 409 if the account has pending disbursements."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": { "method": "DELETE", "url": { "raw": "{{base_url}}/payment-accounts/{{payment_account_id}}" } },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"message\": \"Payment account removed successfully.\"\n  }\n}"
+            }
+          ]
+        }
+
+      ]
+    },
+
+    {
+      "name": "📈 Analytics",
+      "item": [
+
+        {
+          "name": "Daily Contributions",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/analytics/daily?days=14",
+              "host": ["{{base_url}}"],
+              "path": ["analytics", "daily"],
+              "query": [
+                { "key": "days", "value": "14", "description": "Number of past days to return: 7 | 14 | 30 | all" }
+              ]
+            },
+            "description": "Day-by-day contribution totals for the chart on Overview and Analytics pages."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": { "method": "GET", "url": { "raw": "{{base_url}}/analytics/daily?days=14" } },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"success\": true,\n  \"data\": [\n    { \"date\": \"2026-04-22\", \"label\": \"Apr 22\", \"total\": 38500000, \"donors\": 412 },\n    { \"date\": \"2026-04-23\", \"label\": \"Apr 23\", \"total\": 42800000, \"donors\": 478 },\n    { \"date\": \"2026-04-24\", \"label\": \"Apr 24\", \"total\": 51200000, \"donors\": 521 },\n    { \"date\": \"2026-04-25\", \"label\": \"Apr 25\", \"total\": 47600000, \"donors\": 489 },\n    { \"date\": \"2026-04-26\", \"label\": \"Apr 26\", \"total\": 62100000, \"donors\": 612 },\n    { \"date\": \"2026-04-27\", \"label\": \"Apr 27\", \"total\": 78400000, \"donors\": 743 },\n    { \"date\": \"2026-04-28\", \"label\": \"Apr 28\", \"total\": 71200000, \"donors\": 681 },\n    { \"date\": \"2026-04-29\", \"label\": \"Apr 29\", \"total\": 68900000, \"donors\": 654 },\n    { \"date\": \"2026-04-30\", \"label\": \"Apr 30\", \"total\": 84700000, \"donors\": 798 },\n    { \"date\": \"2026-05-01\", \"label\": \"May 01\", \"total\": 91300000, \"donors\": 856 },\n    { \"date\": \"2026-05-02\", \"label\": \"May 02\", \"total\": 76800000, \"donors\": 712 },\n    { \"date\": \"2026-05-03\", \"label\": \"May 03\", \"total\": 89200000, \"donors\": 832 },\n    { \"date\": \"2026-05-04\", \"label\": \"May 04\", \"total\": 94600000, \"donors\": 891 },\n    { \"date\": \"2026-05-05\", \"label\": \"May 05\", \"total\": 102400000, \"donors\": 967 }\n  ]\n}"
+            }
+          ]
+        },
+
+        {
+          "name": "Channel Breakdown",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/analytics/channels",
+              "host": ["{{base_url}}"],
+              "path": ["analytics", "channels"]
+            },
+            "description": "Breakdown of total contributions by payment channel (M-Pesa, Tigo Pesa, etc.) for the doughnut chart."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": { "method": "GET", "url": { "raw": "{{base_url}}/analytics/channels" } },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"success\": true,\n  \"data\": [\n    { \"channel\": \"M-Pesa\",       \"total\": 824000000, \"pct\": 44.7, \"count\": 6284 },\n    { \"channel\": \"Tigo Pesa\",    \"total\": 412000000, \"pct\": 22.4, \"count\": 3102 },\n    { \"channel\": \"Airtel Money\", \"total\": 298000000, \"pct\": 16.2, \"count\": 2241 },\n    { \"channel\": \"Bank Transfer\",\"total\": 211000000, \"pct\": 11.5, \"count\": 892  },\n    { \"channel\": \"Card\",         \"total\": 97500000,  \"pct\": 5.3,  \"count\": 328  }\n  ]\n}"
+            }
+          ]
+        },
+
+        {
+          "name": "Regional Breakdown",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/analytics/regions",
+              "host": ["{{base_url}}"],
+              "path": ["analytics", "regions"]
+            },
+            "description": "Breakdown of contributions by geographic region for the bar/geo list."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": { "method": "GET", "url": { "raw": "{{base_url}}/analytics/regions" } },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"success\": true,\n  \"data\": [\n    { \"region\": \"Dar es Salaam\", \"country\": \"TZ\", \"total\": 612000000, \"count\": 4287, \"pct\": 33.2, \"children_funded\": 58 },\n    { \"region\": \"Arusha\",        \"country\": \"TZ\", \"total\": 287000000, \"count\": 2104, \"pct\": 15.6, \"children_funded\": 27 },\n    { \"region\": \"Mwanza\",        \"country\": \"TZ\", \"total\": 198000000, \"count\": 1856, \"pct\": 10.7, \"children_funded\": 19 },\n    { \"region\": \"Dodoma\",        \"country\": \"TZ\", \"total\": 142000000, \"count\": 1342, \"pct\": 7.7,  \"children_funded\": 13 },\n    { \"region\": \"Mbeya\",         \"country\": \"TZ\", \"total\": 98000000,  \"count\": 892,  \"pct\": 5.3,  \"children_funded\": 9  },\n    { \"region\": \"Tanga\",         \"country\": \"TZ\", \"total\": 84500000,  \"count\": 741,  \"pct\": 4.6,  \"children_funded\": 8  },\n    { \"region\": \"Kenya\",         \"country\": \"KE\", \"total\": 248000000, \"count\": 1421, \"pct\": 13.5, \"children_funded\": 0  },\n    { \"region\": \"Diaspora\",      \"country\": null, \"total\": 355500000, \"count\": 1837, \"pct\": 19.3, \"children_funded\": 8  }\n  ]\n}"
+            }
+          ]
+        },
+
+        {
+          "name": "Contribution Size Distribution",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/analytics/contribution-sizes",
+              "host": ["{{base_url}}"],
+              "path": ["analytics", "contribution-sizes"]
+            },
+            "description": "Distribution of contributions by amount bracket for the bar chart on Analytics page."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": { "method": "GET", "url": { "raw": "{{base_url}}/analytics/contribution-sizes" } },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"success\": true,\n  \"data\": [\n    { \"label\": \"< 10K\",      \"min\": 0,      \"max\": 9999,    \"count\": 2841 },\n    { \"label\": \"10–50K\",     \"min\": 10000,  \"max\": 49999,   \"count\": 4218 },\n    { \"label\": \"50–200K\",    \"min\": 50000,  \"max\": 199999,  \"count\": 3102 },\n    { \"label\": \"200K–1M\",    \"min\": 200000, \"max\": 999999,  \"count\": 1987 },\n    { \"label\": \"> 1M\",       \"min\": 1000000,\"max\": null,    \"count\": 699  }\n  ]\n}"
+            }
+          ]
+        }
+
+      ]
+    },
+
+    {
+      "name": "📄 Reports",
+      "item": [
+
+        {
+          "name": "List Reports",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/reports",
+              "host": ["{{base_url}}"],
+              "path": ["reports"]
+            },
+            "description": "Lists all available generated reports (weekly, monthly, audits, exports)."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": { "method": "GET", "url": { "raw": "{{base_url}}/reports" } },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"success\": true,\n  \"data\": [\n    {\n      \"id\": \"rpt_001\",\n      \"name\": \"Weekly Summary — Week 18\",\n      \"type\": \"PDF\",\n      \"size_bytes\": 290816,\n      \"size_label\": \"284 KB\",\n      \"period\": \"weekly\",\n      \"generated_at\": \"2026-05-05T00:00:00Z\"\n    },\n    {\n      \"id\": \"rpt_002\",\n      \"name\": \"Monthly Report — April 2026\",\n      \"type\": \"PDF\",\n      \"size_bytes\": 1258291,\n      \"size_label\": \"1.2 MB\",\n      \"period\": \"monthly\",\n      \"generated_at\": \"2026-05-01T00:00:00Z\"\n    },\n    {\n      \"id\": \"rpt_003\",\n      \"name\": \"Contributor Export — Apr 2026\",\n      \"type\": \"CSV\",\n      \"size_bytes\": 913408,\n      \"size_label\": \"892 KB\",\n      \"period\": \"monthly\",\n      \"generated_at\": \"2026-05-01T00:00:00Z\"\n    }\n  ]\n}"
+            }
+          ]
+        },
+
+        {
+          "name": "Get Report Download URL",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/reports/{{report_id}}/download",
+              "host": ["{{base_url}}"],
+              "path": ["reports", "{{report_id}}", "download"]
+            },
+            "description": "Returns a short-lived (15 min) signed download URL for the report file. Frontend should redirect or open the URL directly."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": { "method": "GET", "url": { "raw": "{{base_url}}/reports/{{report_id}}/download" } },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"url\": \"https://storage.chapaa.tz/reports/rpt_001_weekly_wk18.pdf?sig=abc123&expires=1746622200\",\n    \"expires_at\": \"2026-05-07T11:15:00Z\",\n    \"filename\": \"moyo_weekly_summary_week18.pdf\",\n    \"type\": \"PDF\"\n  }\n}"
+            }
+          ]
+        }
+
+      ]
+    },
+
+    {
+      "name": "👤 Admins",
+      "item": [
+
+        {
+          "name": "List Admins",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admins",
+              "host": ["{{base_url}}"],
+              "path": ["admins"]
+            },
+            "description": "Lists all admins who have access to this campaign dashboard."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": { "method": "GET", "url": { "raw": "{{base_url}}/admins" } },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"success\": true,\n  \"data\": [\n    {\n      \"id\": \"admin-001\",\n      \"name\": \"Moyo Foundation\",\n      \"email\": \"admin@moyo.tz\",\n      \"phone\": \"+255700000000\",\n      \"role\": \"owner\",\n      \"avatar_initials\": \"MF\",\n      \"joined_at\": \"2026-01-01T00:00:00Z\",\n      \"last_login_at\": \"2026-05-07T09:00:00Z\"\n    },\n    {\n      \"id\": \"admin-002\",\n      \"name\": \"Dr. Amina Seif\",\n      \"email\": \"amina.seif@moyo.tz\",\n      \"phone\": \"+255754000001\",\n      \"role\": \"medical_director\",\n      \"avatar_initials\": \"AS\",\n      \"joined_at\": \"2026-01-05T00:00:00Z\",\n      \"last_login_at\": \"2026-05-06T14:30:00Z\"\n    },\n    {\n      \"id\": \"admin-003\",\n      \"name\": \"James Omondi\",\n      \"email\": \"james.omondi@moyo.tz\",\n      \"phone\": \"+255784000002\",\n      \"role\": \"finance_officer\",\n      \"avatar_initials\": \"JO\",\n      \"joined_at\": \"2026-01-10T00:00:00Z\",\n      \"last_login_at\": \"2026-05-07T08:45:00Z\"\n    }\n  ]\n}"
+            }
+          ]
+        },
+
+        {
+          "name": "Invite Admin",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const res = pm.response.json();",
+                  "if (res.success) {",
+                  "  pm.collectionVariables.set('admin_id', res.data.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"new.admin@moyo.tz\",\n  \"phone\": \"+255712000099\",\n  \"name\": \"Grace Mollel\",\n  \"role\": \"finance_officer\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{base_url}}/admins/invite",
+              "host": ["{{base_url}}"],
+              "path": ["admins", "invite"]
+            },
+            "description": "Invites a new admin. They will receive an email/SMS with a setup link.\n\nAvailable roles:\n- `owner` (only one allowed)\n- `medical_director`\n- `finance_officer`\n- `viewer`"
+          },
+          "response": [
+            {
+              "name": "201 Created",
+              "originalRequest": { "method": "POST", "url": { "raw": "{{base_url}}/admins/invite" } },
+              "status": "Created",
+              "code": 201,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"id\": \"admin-004\",\n    \"name\": \"Grace Mollel\",\n    \"email\": \"new.admin@moyo.tz\",\n    \"role\": \"finance_officer\",\n    \"status\": \"invited\",\n    \"invited_at\": \"2026-05-07T11:00:00Z\",\n    \"invite_expires_at\": \"2026-05-14T11:00:00Z\"\n  }\n}"
+            }
+          ]
+        },
+
+        {
+          "name": "Remove Admin",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admins/{{admin_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["admins", "{{admin_id}}"]
+            },
+            "description": "Removes an admin's access to the campaign. Cannot remove owner (role: owner). Returns 403 if attempting to remove self."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": { "method": "DELETE", "url": { "raw": "{{base_url}}/admins/{{admin_id}}" } },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"message\": \"Admin access revoked successfully.\"\n  }\n}"
+            }
+          ]
+        }
+
+      ]
+    },
+
+    {
+      "name": "🌍 Public (No Auth)",
+      "item": [
+
+        {
+          "name": "Get Public Campaign",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/public/campaigns/{{campaign_slug}}",
+              "host": ["{{base_url}}"],
+              "path": ["public", "campaigns", "{{campaign_slug}}"]
+            },
+            "description": "Public endpoint — no authentication required. Returns campaign data for the public fundraising page: raised amount, goal, progress, stats, recent activity."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": { "method": "GET", "url": { "raw": "{{base_url}}/public/campaigns/moyo" } },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"id\": \"campaign_moyo_2026\",\n    \"slug\": \"moyo\",\n    \"name\": \"Moyo — Children Cardiac Surgery Fund\",\n    \"organisation\": \"Moyo Foundation\",\n    \"description\": \"Life-saving cardiac surgery for Tanzanian children born with heart disease.\",\n    \"goal\": 2500000000,\n    \"raised\": 1842500000,\n    \"pct_funded\": 73.7,\n    \"contributors\": 12847,\n    \"surgeries_funded\": 142,\n    \"days_left\": 47,\n    \"end_date\": \"2026-06-30\",\n    \"last_updated\": \"2026-05-07T10:42:00Z\",\n    \"daily_chart\": [\n      { \"label\": \"Apr 30\", \"total\": 84700000 },\n      { \"label\": \"May 01\", \"total\": 91300000 },\n      { \"label\": \"May 02\", \"total\": 76800000 },\n      { \"label\": \"May 03\", \"total\": 89200000 },\n      { \"label\": \"May 04\", \"total\": 94600000 },\n      { \"label\": \"May 05\", \"total\": 102400000 }\n    ],\n    \"regions\": [\n      { \"region\": \"Dar es Salaam\", \"total\": 612000000, \"pct\": 33.2 },\n      { \"region\": \"Diaspora\",      \"total\": 355500000, \"pct\": 19.3 },\n      { \"region\": \"Arusha\",        \"total\": 287000000, \"pct\": 15.6 },\n      { \"region\": \"Kenya\",         \"total\": 248000000, \"pct\": 13.5 }\n    ],\n    \"stats\": {\n      \"raised_this_week\": 102400000,\n      \"weekly_growth_pct\": 12.4,\n      \"new_contributors_this_week\": 487,\n      \"surgeries_this_week\": 3\n    }\n  }\n}"
+            }
+          ]
+        },
+
+        {
+          "name": "Get Top Donors (Public)",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/public/campaigns/{{campaign_slug}}/donors?page=1&limit=8",
+              "host": ["{{base_url}}"],
+              "path": ["public", "campaigns", "{{campaign_slug}}", "donors"],
+              "query": [
+                { "key": "page",  "value": "1", "description": "Page number" },
+                { "key": "limit", "value": "8", "description": "Items per page" }
+              ]
+            },
+            "description": "Public endpoint — no authentication required. Returns non-anonymous top donors for the public donor wall. Anonymous contributions are excluded."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": { "method": "GET", "url": { "raw": "{{base_url}}/public/campaigns/moyo/donors?page=1&limit=8" } },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [{ "key": "Content-Type", "value": "application/json" }],
+              "body": "{\n  \"success\": true,\n  \"data\": [\n    {\n      \"id\": \"ctb_001\",\n      \"name\": \"Amina Kirimi\",\n      \"avatar_initials\": \"AK\",\n      \"total_amount\": 5000000,\n      \"last_contributed_at\": \"2026-05-07T10:40:00Z\"\n    },\n    {\n      \"id\": \"ctb_005\",\n      \"name\": \"Vodacom Foundation\",\n      \"avatar_initials\": \"VF\",\n      \"total_amount\": 50000000,\n      \"last_contributed_at\": \"2026-05-07T08:00:00Z\"\n    },\n    {\n      \"id\": \"ctb_008\",\n      \"name\": \"NMB Bank Staff\",\n      \"avatar_initials\": \"NB\",\n      \"total_amount\": 18500000,\n      \"last_contributed_at\": \"2026-05-07T05:00:00Z\"\n    }\n  ],\n  \"meta\": {\n    \"page\": 1,\n    \"limit\": 8,\n    \"total\": 12535,\n    \"has_more\": true\n  }\n}"
+            }
+          ]
+        }
+
+      ]
+    }
+
+  ]
+}
