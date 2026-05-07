@@ -1,7 +1,10 @@
-# Videos
-*.webm
-*.mp4
-video-output/
-
 # Node
 node_modules/
+
+# Next.js
+.next/
+out/
+next-env.d.ts
+
+# OS
+.DS_Store
