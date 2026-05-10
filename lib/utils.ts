@@ -1,11 +1,13 @@
-export const fmtTZS = (n: number): string => {
+export const fmtTZS = (n: number | null | undefined): string => {
+  if (n == null || isNaN(n)) return '—';
   if (n >= 1e9) return (n / 1e9).toFixed(2) + 'B';
   if (n >= 1e6) return (n / 1e6).toFixed(2) + 'M';
   if (n >= 1e3) return (n / 1e3).toFixed(1) + 'K';
   return n.toLocaleString();
 };
 
-export const fmtTZSFull = (n: number): string => n.toLocaleString('en-US');
+export const fmtTZSFull = (n: number | null | undefined): string =>
+  n == null || isNaN(n) ? '—' : n.toLocaleString('en-US');
 
 export const CHART_FONT = "'Plus Jakarta Sans', -apple-system, sans-serif";
 

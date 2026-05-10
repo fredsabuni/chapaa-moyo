@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Logo from '@/components/Logo';
 import { logout } from '@/lib/auth';
+import { getUser } from '@/lib/session';
 import Overview from './pages/Overview';
 import LiveTransactions from './pages/LiveTransactions';
 import ContributorsPage from './pages/ContributorsPage';
@@ -19,8 +20,12 @@ export default function Dashboard({ onOpenWithdraw }: { onOpenWithdraw: () => vo
   const router = useRouter();
   const [activePage, setActivePage] = useState<Page>('overview');
 
-  const handleLogout = () => {
-    logout();
+  const user = getUser();
+  const initials = user?.avatar_initials ?? user?.name?.slice(0, 2).toUpperCase() ?? 'MF';
+  const displayName = user?.name ?? 'Moyo Foundation';
+
+  const handleLogout = async () => {
+    await logout();
     router.push('/login');
   };
 
@@ -54,7 +59,7 @@ export default function Dashboard({ onOpenWithdraw }: { onOpenWithdraw: () => vo
           )}
           {navItem('transactions',
             <svg className="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M3 12h4l3-9 4 18 3-9h4"/></svg>,
-            'Live Transactions', '12'
+            'Live Transactions'
           )}
           {navItem('contributors',
             <svg className="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>,
@@ -94,9 +99,9 @@ export default function Dashboard({ onOpenWithdraw }: { onOpenWithdraw: () => vo
           </Link>
 
           <div className="sidebar-foot">
-            <div className="avatar">MF</div>
+            <div className="avatar">{initials}</div>
             <div style={{ flex: 1 }}>
-              <div className="nm">Moyo Foundation</div>
+              <div className="nm">{displayName}</div>
               <div className="role">Verified partner</div>
             </div>
             <button

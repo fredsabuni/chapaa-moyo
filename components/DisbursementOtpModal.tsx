@@ -1,37 +1,108 @@
 'use client';
 
-import { useState } from 'react';
-import { PaymentAccount } from '@/lib/paymentAccounts';
+import { useState, useEffect, useCallback } from 'react';
+import { sendOtp, verifyOtp } from '@/lib/services/disbursements.service';
 import { fmtTZSFull } from '@/lib/utils';
+import type { PaymentAccount } from '@/lib/types';
 
 interface Props {
-  open: boolean;
-  onClose: () => void;
-  amount: number;
-  account: PaymentAccount;
-  onSuccess: (ref: string) => void;
+  open:               boolean;
+  onClose:            () => void;
+  disbursementId:     string;
+  amount:             number;
+  fee:                number;
+  netAmount:          number;
+  account:            PaymentAccount;
+  requiresCoApproval: boolean;
+  onSuccess:          (reference: string) => void;
 }
 
-export default function DisbursementOtpModal({ open, onClose, amount, account, onSuccess }: Props) {
-  const [step, setStep] = useState<'review' | 'otp' | 'success'>('review');
-  const [otp, setOtp]   = useState(['', '', '', '', '', '']);
-  const [ref]           = useState('WD-' + (9000 + Math.floor(Math.random() * 999)));
+type Step = 'review' | 'otp' | 'success';
 
-  const FEE = 0.005;
-  const fee = Math.round(amount * FEE);
-  const net = amount - fee;
+export default function DisbursementOtpModal({
+  open, onClose, disbursementId, amount, fee, netAmount, account, requiresCoApproval, onSuccess,
+}: Props) {
+  const [step, setStep]                     = useState<Step>('review');
+  const [otp, setOtp]                       = useState(['', '', '', '', '', '']);
+  const [reference, setReference]           = useState('');
+  const [maskedPhone, setMaskedPhone]       = useState('+255 *** ****');
+  const [resendAt, setResendAt]             = useState<Date | null>(null);
+  const [secondsLeft, setSecondsLeft]       = useState(0);
+  const [attemptsLeft, setAttemptsLeft]     = useState(3);
+  const [otpError, setOtpError]            = useState('');
+  const [sendingOtp, setSendingOtp]         = useState(false);
+  const [verifying, setVerifying]           = useState(false);
+
   const otpFull = otp.every(x => x);
 
-  const onOtpChange = (i: number, v: string) => {
-    if (!/^\d*$/.test(v)) return;
-    const next = [...otp]; next[i] = v.slice(-1); setOtp(next);
-    if (v && i < 5) document.getElementById(`dotp-${i + 1}`)?.focus();
+  // Countdown for resend button
+  useEffect(() => {
+    if (!resendAt) return;
+    const tick = () => {
+      const diff = Math.ceil((resendAt.getTime() - Date.now()) / 1000);
+      setSecondsLeft(Math.max(0, diff));
+    };
+    tick();
+    const id = setInterval(tick, 1000);
+    return () => clearInterval(id);
+  }, [resendAt]);
+
+  const handleSendOtp = useCallback(async () => {
+    setSendingOtp(true);
+    try {
+      const result = await sendOtp(disbursementId);
+      setMaskedPhone(result.message.replace('OTP sent to ', ''));
+      setResendAt(new Date(result.resend_available_at));
+    } catch {
+      // non-fatal — user can retry
+    } finally {
+      setSendingOtp(false);
+    }
+  }, [disbursementId]);
+
+  const handleStepToOtp = async () => {
+    setStep('otp');
+    await handleSendOtp();
+  };
+
+  const handleVerify = async () => {
+    setVerifying(true);
+    setOtpError('');
+    try {
+      const result = await verifyOtp(disbursementId, otp.join(''));
+      setReference(result.reference);
+      setStep('success');
+      onSuccess(result.reference);
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : 'Incorrect OTP.';
+      // Extract attempts_remaining if present in error details
+      const remaining = attemptsLeft - 1;
+      setAttemptsLeft(remaining);
+      if (remaining <= 0) {
+        setOtpError('Too many attempts. This disbursement has been cancelled.');
+        setTimeout(onClose, 3000);
+      } else {
+        setOtpError(`${msg} ${remaining} attempt${remaining === 1 ? '' : 's'} remaining.`);
+      }
+      setOtp(['', '', '', '', '', '']);
+      document.getElementById('dotp-0')?.focus();
+    } finally {
+      setVerifying(false);
+    }
   };
 
   const handleClose = () => {
     setStep('review');
     setOtp(['', '', '', '', '', '']);
+    setOtpError('');
+    setAttemptsLeft(3);
     onClose();
+  };
+
+  const onOtpChange = (i: number, v: string) => {
+    if (!/^\d*$/.test(v)) return;
+    const next = [...otp]; next[i] = v.slice(-1); setOtp(next);
+    if (v && i < 5) document.getElementById(`dotp-${i + 1}`)?.focus();
   };
 
   if (!open) return null;
@@ -40,7 +111,6 @@ export default function DisbursementOtpModal({ open, onClose, amount, account, o
     <div className="modal-overlay" onClick={handleClose}>
       <div className="modal" onClick={e => e.stopPropagation()}>
 
-        {/* Header */}
         <div className="modal-head">
           <div>
             <h3>{step === 'success' ? 'Disbursement sent' : 'Confirm disbursement'}</h3>
@@ -57,7 +127,6 @@ export default function DisbursementOtpModal({ open, onClose, amount, account, o
           </button>
         </div>
 
-        {/* Progress */}
         {step !== 'success' && (
           <div className="step-track">
             <div className={`seg-bar ${step === 'review' ? 'active' : 'done'}`}></div>
@@ -65,7 +134,6 @@ export default function DisbursementOtpModal({ open, onClose, amount, account, o
           </div>
         )}
 
-        {/* Body */}
         <div className="modal-body">
 
           {step === 'review' && (
@@ -85,10 +153,10 @@ export default function DisbursementOtpModal({ open, onClose, amount, account, o
                 <div className="summary-row" style={{ alignItems: 'flex-start' }}>
                   <span className="l">Destination</span>
                   <span className="r" style={{ fontFamily: 'var(--sans)', textAlign: 'right' }}>
-                    <span style={{ fontWeight: 600 }}>{account.accountName}</span>
+                    <span style={{ fontWeight: 600 }}>{account.account_name}</span>
                     <br />
                     <span style={{ fontSize: 11, color: 'var(--muted)' }}>
-                      {account.bankName} · {account.accountNumber}
+                      {account.bank_name} · {account.account_number}
                       {account.branch ? ` · ${account.branch}` : ''}
                     </span>
                   </span>
@@ -99,15 +167,12 @@ export default function DisbursementOtpModal({ open, onClose, amount, account, o
                 </div>
                 <div className="summary-row total">
                   <span className="l">Net to receive</span>
-                  <span className="r">TZS {fmtTZSFull(net)}</span>
+                  <span className="r">TZS {fmtTZSFull(netAmount)}</span>
                 </div>
               </div>
-
-              {amount > 100000000 && (
+              {requiresCoApproval && (
                 <div style={{ marginTop: 14, padding: '11px 14px', background: 'var(--teal-soft)', borderRadius: 10, fontSize: 12, color: 'var(--green-deep)', display: 'flex', gap: 9, alignItems: 'flex-start' }}>
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ flexShrink: 0, marginTop: 1 }}>
-                    <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
-                  </svg>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ flexShrink: 0, marginTop: 1 }}><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
                   <span>Disbursements over TZS 100M require co-approval from a second authorised admin within 30 minutes.</span>
                 </div>
               )}
@@ -124,8 +189,8 @@ export default function DisbursementOtpModal({ open, onClose, amount, account, o
                 </div>
                 <h4 style={{ fontFamily: 'var(--sans)', fontSize: 20, fontWeight: 700, letterSpacing: '-0.015em' }}>Enter OTP</h4>
                 <p style={{ color: 'var(--muted)', fontSize: 13, marginTop: 6, lineHeight: 1.5 }}>
-                  A 6-digit code was sent to <b style={{ color: 'var(--ink)' }}>+255 *** 4421</b>.<br />
-                  It expires in 5 minutes.
+                  {sendingOtp ? 'Sending code…' : <>A 6-digit code was sent to <b style={{ color: 'var(--ink)' }}>{maskedPhone}</b>.</>}
+                  <br />It expires in 5 minutes.
                 </p>
               </div>
               <div className="otp-grid">
@@ -141,11 +206,20 @@ export default function DisbursementOtpModal({ open, onClose, amount, account, o
                     }}
                     inputMode="numeric"
                     maxLength={1}
+                    disabled={attemptsLeft <= 0}
                   />
                 ))}
               </div>
+              {otpError && (
+                <div style={{ marginTop: 10, fontSize: 12, color: 'var(--rose)', textAlign: 'center' }}>{otpError}</div>
+              )}
               <div className="otp-help">
-                Didn&apos;t get the code? <a>Resend in 0:42</a>
+                Didn&apos;t get the code?{' '}
+                {secondsLeft > 0 ? (
+                  <span style={{ color: 'var(--muted)' }}>Resend in 0:{String(secondsLeft).padStart(2, '0')}</span>
+                ) : (
+                  <a style={{ cursor: 'pointer' }} onClick={handleSendOtp}>Resend</a>
+                )}
               </div>
             </>
           )}
@@ -159,24 +233,23 @@ export default function DisbursementOtpModal({ open, onClose, amount, account, o
               </div>
               <h4>Disbursement initiated</h4>
               <p>
-                <b style={{ color: 'var(--ink)' }}>TZS {fmtTZSFull(net)}</b> is being sent to{' '}
-                <b style={{ color: 'var(--ink)' }}>{account.accountName}</b> at {account.bankName}.
+                <b style={{ color: 'var(--ink)' }}>TZS {fmtTZSFull(netAmount)}</b> is being sent to{' '}
+                <b style={{ color: 'var(--ink)' }}>{account.account_name}</b> at {account.bank_name}.
                 <br />You&apos;ll receive a confirmation SMS once it lands.
               </p>
               <div className="ref-box">
                 <span className="l">Reference</span>
-                <span className="r">{ref}</span>
+                <span className="r">{reference}</span>
               </div>
             </div>
           )}
         </div>
 
-        {/* Footer */}
         <div className="modal-foot">
           {step === 'review' && (
             <>
               <button className="btn btn-ghost" onClick={handleClose}>Cancel</button>
-              <button className="btn btn-dark" onClick={() => setStep('otp')}>
+              <button className="btn btn-dark" onClick={handleStepToOtp}>
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.61 3.35 2 2 0 0 1 3.6 1h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.64a16 16 0 0 0 6 6l.96-.96a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/>
                 </svg>
@@ -189,10 +262,10 @@ export default function DisbursementOtpModal({ open, onClose, amount, account, o
               <button className="btn btn-ghost" onClick={() => setStep('review')}>Back</button>
               <button
                 className="btn btn-teal"
-                onClick={() => { setStep('success'); onSuccess(ref); }}
-                disabled={!otpFull}
+                onClick={handleVerify}
+                disabled={!otpFull || verifying || attemptsLeft <= 0}
               >
-                Verify &amp; disburse
+                {verifying ? <span className="login-spinner" style={{ width: 14, height: 14, borderWidth: 2 }}></span> : 'Verify & disburse'}
               </button>
             </>
           )}

@@ -4,7 +4,12 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Logo from '@/components/Logo';
-import { login, isAuthed, DEMO_EMAIL, DEMO_PHONE, DEMO_PASSWORD } from '@/lib/auth';
+import { isAuthed } from '@/lib/auth';
+import { loginUser } from '@/lib/services/auth.service';
+import { ApiError } from '@/lib/api';
+import { useQuery } from '@/lib/useQuery';
+import { getPublicCampaign, getTopDonors } from '@/lib/services/public.service';
+import { fmtTZS } from '@/lib/utils';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -15,6 +20,17 @@ export default function LoginPage() {
   const [error, setError]       = useState('');
   const [loading, setLoading]   = useState(false);
 
+  const campaign = useQuery(() => getPublicCampaign('moyo'));
+  const donors   = useQuery(() => getTopDonors('moyo', 1, 1));
+  const c = campaign.data;
+  const raised       = c?.total_raised ?? 0;
+  const pctFunded    = c?.pct_funded ?? (c?.target_amount ? (raised / c.target_amount) * 100 : 0);
+  const contributors = c?.contributors ?? donors.data?.meta?.total;
+  const blurb = (() => {
+    const full = c?.description ?? 'Funding life-saving cardiac surgery for Tanzanian children born with heart disease.';
+    return full.length > 100 ? full.slice(0, 97).trimEnd() + '…' : full;
+  })();
+
   useEffect(() => {
     if (isAuthed()) router.replace('/dashboard');
   }, [router]);
@@ -23,12 +39,16 @@ export default function LoginPage() {
     e.preventDefault();
     setError('');
     setLoading(true);
-    await new Promise(r => setTimeout(r, 600));
-    const ok = login(credential.trim(), password);
-    if (ok) {
+    try {
+      await loginUser(credential.trim(), password);
       router.push('/dashboard');
-    } else {
-      setError('Invalid credentials. Use the demo details below.');
+    } catch (e) {
+      if (e instanceof ApiError && e.status === 401) {
+        setError('Email/phone or password is incorrect.');
+      } else {
+        setError(e instanceof Error ? e.message : 'Something went wrong. Please try again.');
+      }
+    } finally {
       setLoading(false);
     }
   };
@@ -78,7 +98,7 @@ export default function LoginPage() {
                   type="tel"
                   placeholder="700 000 000"
                   value={credential.replace(/^\+?255\s?/, '')}
-                  onChange={e => setCred('+255 ' + e.target.value)}
+                  onChange={e => setCred('+255' + e.target.value)}
                   autoComplete="tel"
                   required
                 />
@@ -144,22 +164,6 @@ export default function LoginPage() {
           </button>
         </form>
 
-        <div className="demo-box">
-          <div className="demo-box-label">Demo credentials</div>
-          <div className="demo-row">
-            <span>Email</span>
-            <code>{DEMO_EMAIL}</code>
-          </div>
-          <div className="demo-row">
-            <span>Phone</span>
-            <code>{DEMO_PHONE}</code>
-          </div>
-          <div className="demo-row">
-            <span>Password</span>
-            <code>{DEMO_PASSWORD}</code>
-          </div>
-        </div>
-
         <div className="login-footer">
           <Link href="/">← Back to public page</Link>
         </div>
@@ -169,27 +173,34 @@ export default function LoginPage() {
         <div className="login-side-inner">
           <div className="login-quote">
             <div className="login-quote-mark">"</div>
-            <p>Every shilling contributed to Moyo brings a child with a broken heart one step closer to a healthy life.</p>
+            <p>{blurb}</p>
             <div className="login-quote-author">
-              <div className={`contrib-avatar v2`} style={{ width: 36, height: 36, fontSize: 12 }}>MF</div>
+              <div className="contrib-avatar v2" style={{ width: 36, height: 36, fontSize: 12 }}>
+                {c?.organisation ? c.organisation.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase() : 'MF'}
+              </div>
               <div>
-                <div style={{ fontWeight: 600, fontSize: 13 }}>Moyo Foundation</div>
-                <div style={{ fontSize: 11, color: 'var(--teal-2)', marginTop: 2 }}>Children Cardiac Surgery Fund</div>
+                <div style={{ fontWeight: 600, fontSize: 13 }}>{c?.organisation ?? 'Moyo Foundation'}</div>
+                <div style={{ fontSize: 11, color: 'var(--teal-2)', marginTop: 2 }}>{c?.name ?? 'Children Cardiac Surgery Fund'}</div>
               </div>
             </div>
           </div>
           <div className="login-stats-grid">
-            {[
-              { v: '1.84B', l: 'TZS raised' },
-              { v: '12,847', l: 'Contributors' },
-              { v: '142', l: 'Surgeries funded' },
-              { v: '47', l: 'Days remaining' },
-            ].map((s, i) => (
-              <div key={i} className="login-stat">
-                <div className="login-stat-v">{s.v}</div>
-                <div className="login-stat-l">{s.l}</div>
-              </div>
-            ))}
+            <div className="login-stat">
+              <div className="login-stat-v">{campaign.loading ? '…' : (raised ? fmtTZS(raised) : '—')}</div>
+              <div className="login-stat-l">TZS raised</div>
+            </div>
+            <div className="login-stat">
+              <div className="login-stat-v">{campaign.loading && donors.loading ? '…' : (contributors?.toLocaleString() ?? '—')}</div>
+              <div className="login-stat-l">Contributors</div>
+            </div>
+            <div className="login-stat">
+              <div className="login-stat-v">{campaign.loading ? '…' : (pctFunded ? pctFunded.toFixed(1) + '%' : '—')}</div>
+              <div className="login-stat-l">Goal reached</div>
+            </div>
+            <div className="login-stat">
+              <div className="login-stat-v">{campaign.loading ? '…' : (c?.days_left ?? '—')}</div>
+              <div className="login-stat-l">Days remaining</div>
+            </div>
           </div>
         </div>
       </div>

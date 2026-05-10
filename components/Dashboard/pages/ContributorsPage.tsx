@@ -1,19 +1,28 @@
 'use client';
 
-import { contributors, CONTRIBUTORS } from '@/lib/data';
-import { fmtTZSFull } from '@/lib/utils';
+import { useState } from 'react';
+import { useQuery, useListQuery } from '@/lib/useQuery';
+import { listContributors, getContributorStats } from '@/lib/services/contributors.service';
+import { CHANNEL_COLORS } from '@/lib/constants';
+import { fmtTZS } from '@/lib/utils';
+import { CONTRIBUTOR_PAGE_LIMIT } from '@/lib/constants';
 
-const regions = ['Dar es Salaam', 'Arusha', 'Dodoma', 'Mwanza', 'Diaspora', 'Kenya'];
-
-const allContribs = [
-  ...contributors,
-  { id: 9,  name: 'Halima Mtoro',   handle: '@halimat',   avatar: 'HM', vc: 1, amount: 450000,   count: 5,  channel: 'M-Pesa',    color: '#15B894', when: '6 hours ago', region: 'Arusha' },
-  { id: 10, name: 'Patrick Ngowi',  handle: '@patrickn',  avatar: 'PN', vc: 2, amount: 2000000,  count: 2,  channel: 'Bank',      color: '#0B1330', when: '7 hours ago', region: 'Dar es Salaam' },
-  { id: 11, name: 'Zawadi Msuya',   handle: '@zawadim',   avatar: 'ZM', vc: 3, amount: 100000,   count: 8,  channel: 'Tigo Pesa', color: '#1FD1A8', when: '8 hours ago', region: 'Mwanza' },
-  { id: 12, name: 'CCBRT Hospital', handle: 'Partner org',avatar: 'CC', vc: 4, amount: 75000000, count: 1,  channel: 'Bank',      color: '#0B1330', when: '9 hours ago', region: 'Dar es Salaam' },
-].map((c, i) => ({ ...c, region: c.region ?? regions[i % 6] }));
+const CHANNELS = ['', 'M-Pesa', 'Tigo Pesa', 'Airtel Money', 'Bank', 'Card'];
+const TYPES    = ['', 'individual', 'corporate', 'anonymous'];
 
 export default function ContributorsPage() {
+  const [channel, setChannel] = useState('');
+  const [type, setType]       = useState('');
+
+  const stats = useQuery(getContributorStats);
+
+  const list = useListQuery(
+    (page) => listContributors({ page, limit: CONTRIBUTOR_PAGE_LIMIT, channel, type }),
+    [channel, type],
+  );
+
+  const kpi = stats.data;
+
   return (
     <div>
       <div className="pageHead">
@@ -23,30 +32,68 @@ export default function ContributorsPage() {
           <div className="sub">Every person here is helping a child with a heart condition get the surgery they need.</div>
         </div>
       </div>
+
+      {/* KPI Hero */}
       <div className="kpi-hero" style={{ gridTemplateColumns: '1fr 1fr 1fr 1fr' }}>
         <div className="hero-main">
           <div className="label"><span className="dot"></span>All-time contributors</div>
-          <div className="big-amount">{CONTRIBUTORS.toLocaleString()}</div>
-          <div className="of">from <b>8 countries &amp; regions</b></div>
+          <div className="big-amount">{kpi ? kpi.total.toLocaleString() : '—'}</div>
+          <div className="of">from <b>{kpi?.countries ?? '—'} countries &amp; regions</b></div>
         </div>
-        <div className="hero-stat"><div className="lbl">First-time</div><div className="val">8,241</div><div className="delta delta-up">↑ 64.2%</div></div>
-        <div className="hero-stat"><div className="lbl">Returning</div><div className="val">4,606</div><div className="delta delta-up">↑ 35.8%</div></div>
-        <div className="hero-stat"><div className="lbl">Corporates</div><div className="val">47</div><div className="delta delta-flat">→ stable</div></div>
+        <div className="hero-stat">
+          <div className="lbl">First-time</div>
+          <div className="val">{kpi ? kpi.first_time.toLocaleString() : '—'}</div>
+          <div className="delta delta-up">↑ {kpi?.first_time_pct ?? '—'}%</div>
+        </div>
+        <div className="hero-stat">
+          <div className="lbl">Returning</div>
+          <div className="val">{kpi ? kpi.returning.toLocaleString() : '—'}</div>
+          <div className="delta delta-up">↑ {kpi?.returning_pct ?? '—'}%</div>
+        </div>
+        <div className="hero-stat">
+          <div className="lbl">Corporates</div>
+          <div className="val">{kpi?.corporate ?? '—'}</div>
+          <div className="delta delta-flat">→ stable</div>
+        </div>
       </div>
+
       <div className="card" style={{ marginTop: 20 }}>
         <div className="card-head">
           <div><h3>All contributors</h3><div className="sub">Sorted by most recent contribution</div></div>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <select
+              className="field-input"
+              value={channel}
+              onChange={e => setChannel(e.target.value)}
+              style={{ padding: '7px 12px', fontSize: 12, cursor: 'pointer', height: 34 }}
+            >
+              {CHANNELS.map(c => <option key={c} value={c}>{c || 'All channels'}</option>)}
+            </select>
+            <select
+              className="field-input"
+              value={type}
+              onChange={e => setType(e.target.value)}
+              style={{ padding: '7px 12px', fontSize: 12, cursor: 'pointer', height: 34 }}
+            >
+              {TYPES.map(t => <option key={t} value={t}>{t || 'All types'}</option>)}
+            </select>
+          </div>
         </div>
+
+        {list.error && (
+          <div style={{ padding: '16px', color: 'var(--rose)', fontSize: 13 }}>{list.error}</div>
+        )}
+
         <table className="table">
           <thead>
-            <tr><th>Contributor</th><th>Region</th><th>Channel</th><th>Contributions</th><th>Last activity</th><th>Total amount</th></tr>
+            <tr><th>Contributor</th><th>Region</th><th>Channel</th><th>Contributions</th><th>Last activity</th><th style={{ textAlign: 'right' }}>Total (TZS)</th></tr>
           </thead>
           <tbody>
-            {allContribs.map(c => (
-              <tr key={c.id}>
+            {list.items.map((c, i) => (
+              <tr key={c.id ?? i}>
                 <td>
                   <div className="contrib">
-                    <div className={`contrib-avatar v${c.vc}`}>{c.avatar}</div>
+                    <div className={`contrib-avatar v${(i % 4) + 1}`}>{c.avatar_initials}</div>
                     <div>
                       <div className="contrib-name">{c.name}</div>
                       <div className="contrib-meta">{c.handle}</div>
@@ -56,17 +103,33 @@ export default function ContributorsPage() {
                 <td style={{ fontSize: 12, color: 'var(--muted)' }}>{c.region}</td>
                 <td>
                   <span className="channel-tag">
-                    <span className="pip" style={{ background: c.color }}></span>
+                    <span className="pip" style={{ background: CHANNEL_COLORS[c.channel] ?? '#9AA3BD' }}></span>
                     {c.channel}
                   </span>
                 </td>
-                <td>{c.count}</td>
-                <td style={{ color: 'var(--muted)', fontSize: 12 }}>{c.when}</td>
-                <td className="amount-cell">TZS {fmtTZSFull(c.amount)}</td>
+                <td>{c.contribution_count}</td>
+                <td style={{ color: 'var(--muted)', fontSize: 12 }}>
+                  {new Date(c.last_contribution_at).toLocaleString('en-US', { month: 'short', day: '2-digit', hour: '2-digit', minute: '2-digit' })}
+                </td>
+                <td className="amount-cell" style={{ textAlign: 'right' }}>{fmtTZS(c.total_amount)}</td>
               </tr>
             ))}
           </tbody>
         </table>
+
+        {list.loading && (
+          <div style={{ padding: '24px', textAlign: 'center', color: 'var(--muted)', fontSize: 13 }}>Loading…</div>
+        )}
+
+        {list.hasMore && !list.loading && (
+          <div style={{ padding: '16px', textAlign: 'center' }}>
+            <button className="btn btn-ghost" onClick={list.loadMore}>Load more</button>
+          </div>
+        )}
+
+        {!list.loading && list.items.length === 0 && !list.error && (
+          <div style={{ padding: '40px', textAlign: 'center', color: 'var(--muted)', fontSize: 13 }}>No contributors found.</div>
+        )}
       </div>
     </div>
   );

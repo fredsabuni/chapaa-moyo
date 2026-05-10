@@ -1,27 +1,26 @@
 'use client';
 
-import { fmtTZSFull } from '@/lib/utils';
+import { useState } from 'react';
+import { useQuery, useListQuery } from '@/lib/useQuery';
+import { listTransactions, getTransactionStats } from '@/lib/services/transactions.service';
+import { STATUS_COLORS, TRANSACTION_PAGE_LIMIT } from '@/lib/constants';
+import { fmtTZS } from '@/lib/utils';
 
-const txns = [
-  { id: 'TX-8821', name: 'Rehema Njau',    amount: 500000,   channel: 'M-Pesa',    region: 'Dar es Salaam', time: '10:42:18', status: 'confirmed' },
-  { id: 'TX-8820', name: 'Omar Shaaban',   amount: 250000,   channel: 'Tigo Pesa', region: 'Zanzibar',      time: '10:41:55', status: 'confirmed' },
-  { id: 'TX-8819', name: 'Anonymous',      amount: 2000000,  channel: 'Bank',      region: 'Unknown',       time: '10:41:12', status: 'confirmed' },
-  { id: 'TX-8818', name: 'Fatuma Ally',    amount: 100000,   channel: 'Airtel',    region: 'Mwanza',        time: '10:40:44', status: 'confirmed' },
-  { id: 'TX-8817', name: 'David Kimaro',   amount: 1500000,  channel: 'M-Pesa',    region: 'Arusha',        time: '10:39:30', status: 'confirmed' },
-  { id: 'TX-8816', name: 'Neema Wambura',  amount: 300000,   channel: 'M-Pesa',    region: 'Dar es Salaam', time: '10:38:02', status: 'pending' },
-  { id: 'TX-8815', name: 'Rashid Mwita',   amount: 750000,   channel: 'Tigo Pesa', region: 'Dodoma',        time: '10:36:50', status: 'confirmed' },
-  { id: 'TX-8814', name: 'ABC Foundation', amount: 10000000, channel: 'Bank',      region: 'Nairobi, KE',   time: '10:35:00', status: 'confirmed' },
-  { id: 'TX-8813', name: 'Safia Hamisi',   amount: 200000,   channel: 'Airtel',    region: 'Tanga',         time: '10:33:15', status: 'confirmed' },
-  { id: 'TX-8812', name: 'George Lema',    amount: 850000,   channel: 'M-Pesa',    region: 'Mbeya',         time: '10:31:40', status: 'failed' },
-];
-
-const statusColor: Record<string, string> = {
-  confirmed: '#15B894',
-  pending: '#E89B3C',
-  failed: '#E5547D',
-};
+const STATUS_OPTIONS  = ['', 'confirmed', 'pending', 'failed'];
+const CHANNEL_OPTIONS = ['', 'M-Pesa', 'Tigo Pesa', 'Airtel Money', 'Bank', 'Card'];
 
 export default function LiveTransactions() {
+  const [status, setStatus]   = useState('');
+  const [channel, setChannel] = useState('');
+
+  const stats = useQuery(getTransactionStats);
+  const list  = useListQuery(
+    (page) => listTransactions({ page, limit: TRANSACTION_PAGE_LIMIT, status, channel }),
+    [status, channel],
+  );
+
+  const kpi = stats.data;
+
   return (
     <div>
       <div className="pageHead">
@@ -31,38 +30,87 @@ export default function LiveTransactions() {
           <div className="sub">Real-time contribution feed — every shilling counted for our children.</div>
         </div>
         <div className="head-actions">
-          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 12, color: 'var(--teal)', fontWeight: 600, background: 'rgba(21,184,148,0.1)', padding: '7px 12px', borderRadius: 999 }}>
-            <span style={{ width: 7, height: 7, borderRadius: '50%', background: 'var(--teal)', display: 'inline-block', boxShadow: '0 0 0 3px rgba(21,184,148,0.25)', animation: 'pulse 2s infinite' }}></span>
-            12 new in last hour
-          </span>
+          {kpi && (
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 12, color: 'var(--teal)', fontWeight: 600, background: 'rgba(21,184,148,0.1)', padding: '7px 12px', borderRadius: 999 }}>
+              <span style={{ width: 7, height: 7, borderRadius: '50%', background: 'var(--teal)', display: 'inline-block', boxShadow: '0 0 0 3px rgba(21,184,148,0.25)', animation: 'pulse 2s infinite' }}></span>
+              {kpi.last_hour_count} new in last hour
+            </span>
+          )}
         </div>
       </div>
+
       <div className="card">
+        <div className="card-head">
+          <div><h3>Transaction feed</h3><div className="sub">{kpi ? `${kpi.today_count.toLocaleString()} today · ${kpi.pending_count} pending` : 'Loading…'}</div></div>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <select
+              className="field-input"
+              value={status}
+              onChange={e => setStatus(e.target.value)}
+              style={{ padding: '7px 12px', fontSize: 12, cursor: 'pointer', height: 34 }}
+            >
+              {STATUS_OPTIONS.map(s => <option key={s} value={s}>{s || 'All statuses'}</option>)}
+            </select>
+            <select
+              className="field-input"
+              value={channel}
+              onChange={e => setChannel(e.target.value)}
+              style={{ padding: '7px 12px', fontSize: 12, cursor: 'pointer', height: 34 }}
+            >
+              {CHANNEL_OPTIONS.map(c => <option key={c} value={c}>{c || 'All channels'}</option>)}
+            </select>
+          </div>
+        </div>
+
+        {list.error && (
+          <div style={{ padding: '16px', color: 'var(--rose)', fontSize: 13 }}>{list.error}</div>
+        )}
+
         <table className="table">
           <thead>
             <tr>
               <th>Tx ID</th><th>Contributor</th><th>Channel</th>
-              <th>Region</th><th>Time</th><th>Status</th><th>Amount</th>
+              <th>Region</th><th>Time</th><th>Status</th><th style={{ textAlign: 'right' }}>Amount (TZS)</th>
             </tr>
           </thead>
           <tbody>
-            {txns.map((t, i) => (
-              <tr key={i}>
+            {list.items.map((t, i) => (
+              <tr key={t.id ?? i}>
                 <td><span style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--muted)' }}>{t.id}</span></td>
-                <td><span style={{ fontWeight: 600 }}>{t.name}</span></td>
+                <td><span style={{ fontWeight: 600 }}>{t.contributor_name}</span></td>
                 <td><span className="channel-tag">{t.channel}</span></td>
                 <td style={{ color: 'var(--muted)', fontSize: 12 }}>{t.region}</td>
-                <td style={{ fontFamily: 'var(--mono)', fontSize: 12, color: 'var(--muted)' }}>{t.time}</td>
+                <td style={{ fontFamily: 'var(--mono)', fontSize: 12, color: 'var(--muted)' }}>
+                  {new Date(t.transacted_at).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                </td>
                 <td>
-                  <span style={{ fontSize: 11, padding: '3px 8px', borderRadius: 6, fontWeight: 600, background: statusColor[t.status] + '22', color: statusColor[t.status] }}>
+                  <span style={{
+                    fontSize: 11, padding: '3px 8px', borderRadius: 6, fontWeight: 600,
+                    background: (STATUS_COLORS[t.status] ?? '#9AA3BD') + '22',
+                    color: STATUS_COLORS[t.status] ?? '#9AA3BD',
+                  }}>
                     {t.status}
                   </span>
                 </td>
-                <td className="amount-cell">TZS {fmtTZSFull(t.amount)}</td>
+                <td className="amount-cell" style={{ textAlign: 'right' }}>{fmtTZS(t.amount)}</td>
               </tr>
             ))}
           </tbody>
         </table>
+
+        {list.loading && (
+          <div style={{ padding: '24px', textAlign: 'center', color: 'var(--muted)', fontSize: 13 }}>Loading…</div>
+        )}
+
+        {list.hasMore && !list.loading && (
+          <div style={{ padding: '16px', textAlign: 'center' }}>
+            <button className="btn btn-ghost" onClick={list.loadMore}>Load more</button>
+          </div>
+        )}
+
+        {!list.loading && list.items.length === 0 && !list.error && (
+          <div style={{ padding: '40px', textAlign: 'center', color: 'var(--muted)', fontSize: 13 }}>No transactions found.</div>
+        )}
       </div>
     </div>
   );

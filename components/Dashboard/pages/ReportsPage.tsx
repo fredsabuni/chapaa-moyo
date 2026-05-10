@@ -1,15 +1,17 @@
 'use client';
 
-const reports = [
-  { name: 'Weekly Summary — Week 18',       date: 'May 05, 2026', size: '284 KB', type: 'PDF' },
-  { name: 'Weekly Summary — Week 17',       date: 'Apr 28, 2026', size: '271 KB', type: 'PDF' },
-  { name: 'Monthly Report — April 2026',    date: 'May 01, 2026', size: '1.2 MB', type: 'PDF' },
-  { name: 'Contributor Export — Apr 2026',  date: 'May 01, 2026', size: '892 KB', type: 'CSV' },
-  { name: 'Disbursement Audit — Q1 2026',   date: 'Apr 01, 2026', size: '548 KB', type: 'PDF' },
-  { name: 'Regional Breakdown — Apr 2026',  date: 'May 01, 2026', size: '340 KB', type: 'XLSX' },
-];
+import { useQuery, useMutation } from '@/lib/useQuery';
+import { listReports, getReportDownload } from '@/lib/services/reports.service';
 
 export default function ReportsPage() {
+  const { data: reports, loading, error } = useQuery(listReports);
+  const download = useMutation(getReportDownload);
+
+  const handleDownload = async (id: string) => {
+    const result = await download.mutate(id);
+    if (result) window.open(result.url, '_blank');
+  };
+
   return (
     <div>
       <div className="pageHead">
@@ -22,26 +24,50 @@ export default function ReportsPage() {
           <button className="btn btn-ghost" onClick={() => window.print()}>Print Report</button>
         </div>
       </div>
+
       <div className="card">
         <div className="card-head">
           <div><h3>Available reports</h3><div className="sub">Generated automatically at the end of each period</div></div>
         </div>
-        <table className="table">
-          <thead>
-            <tr><th>Report name</th><th>Generated</th><th>Format</th><th>Size</th><th style={{ textAlign: 'center' }}>Action</th></tr>
-          </thead>
-          <tbody>
-            {reports.map((r, i) => (
-              <tr key={i}>
-                <td style={{ fontWeight: 600 }}>{r.name}</td>
-                <td style={{ color: 'var(--muted)', fontSize: 12 }}>{r.date}</td>
-                <td><span style={{ fontSize: 11, padding: '3px 8px', borderRadius: 6, fontWeight: 600, background: 'var(--bg)', border: '1px solid var(--line)' }}>{r.type}</span></td>
-                <td style={{ color: 'var(--muted)', fontSize: 12, fontFamily: 'var(--mono)' }}>{r.size}</td>
-                <td style={{ textAlign: 'center' }}><button className="btn btn-ghost" style={{ padding: '6px 12px', fontSize: 11 }}>Download</button></td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+
+        {error && <div style={{ padding: '16px', color: 'var(--rose)', fontSize: 13 }}>{error}</div>}
+        {loading && <div style={{ padding: '40px', textAlign: 'center', color: 'var(--muted)', fontSize: 13 }}>Loading…</div>}
+
+        {reports && reports.length > 0 && (
+          <table className="table">
+            <thead>
+              <tr><th>Report name</th><th>Generated</th><th>Format</th><th>Size</th><th style={{ textAlign: 'center' }}>Action</th></tr>
+            </thead>
+            <tbody>
+              {reports.map(r => (
+                <tr key={r.id}>
+                  <td style={{ fontWeight: 600 }}>{r.name}</td>
+                  <td style={{ color: 'var(--muted)', fontSize: 12 }}>
+                    {new Date(r.generated_at).toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' })}
+                  </td>
+                  <td>
+                    <span style={{ fontSize: 11, padding: '3px 8px', borderRadius: 6, fontWeight: 600, background: 'var(--bg)', border: '1px solid var(--line)' }}>{r.type}</span>
+                  </td>
+                  <td style={{ color: 'var(--muted)', fontSize: 12, fontFamily: 'var(--mono)' }}>{r.size_label}</td>
+                  <td style={{ textAlign: 'center' }}>
+                    <button
+                      className="btn btn-ghost"
+                      style={{ padding: '6px 12px', fontSize: 11 }}
+                      onClick={() => handleDownload(r.id)}
+                      disabled={download.loading}
+                    >
+                      Download
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+
+        {!loading && reports?.length === 0 && (
+          <div style={{ padding: '40px', textAlign: 'center', color: 'var(--muted)', fontSize: 13 }}>No reports available yet.</div>
+        )}
       </div>
     </div>
   );
