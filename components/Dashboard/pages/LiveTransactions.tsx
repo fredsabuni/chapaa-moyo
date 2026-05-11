@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useQuery, useListQuery } from '@/lib/useQuery';
 import { listTransactions, getTransactionStats } from '@/lib/services/transactions.service';
 import { STATUS_COLORS, TRANSACTION_PAGE_LIMIT } from '@/lib/constants';
-import { fmtTZS } from '@/lib/utils';
+import { fmtTZSFull } from '@/lib/utils';
 
 const STATUS_OPTIONS  = ['', 'confirmed', 'pending', 'failed'];
 const CHANNEL_OPTIONS = ['', 'M-Pesa', 'Tigo Pesa', 'Airtel Money', 'Bank', 'Card'];
@@ -41,7 +41,7 @@ export default function LiveTransactions() {
 
       <div className="card">
         <div className="card-head">
-          <div><h3>Transaction feed</h3><div className="sub">{kpi ? `${kpi.today_count.toLocaleString()} today · ${kpi.pending_count} pending` : 'Loading…'}</div></div>
+          <div><h3>Transaction feed</h3><div className="sub">{kpi ? `${(kpi.today_count ?? 0).toLocaleString()} today · ${kpi.pending_count ?? 0} pending` : 'Loading…'}</div></div>
           <div style={{ display: 'flex', gap: 8 }}>
             <select
               className="field-input"
@@ -69,19 +69,20 @@ export default function LiveTransactions() {
         <table className="table">
           <thead>
             <tr>
-              <th>Tx ID</th><th>Contributor</th><th>Channel</th>
-              <th>Region</th><th>Time</th><th>Status</th><th style={{ textAlign: 'right' }}>Amount (TZS)</th>
+              <th>Reference</th><th>Contributor</th><th>Channel</th>
+              <th>Time</th><th>Status</th><th style={{ textAlign: 'right' }}>Amount (TZS)</th>
             </tr>
           </thead>
           <tbody>
             {list.items.map((t, i) => (
               <tr key={t.id ?? i}>
-                <td><span style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--muted)' }}>{t.id}</span></td>
-                <td><span style={{ fontWeight: 600 }}>{t.contributor_name}</span></td>
-                <td><span className="channel-tag">{t.channel}</span></td>
-                <td style={{ color: 'var(--muted)', fontSize: 12 }}>{t.region}</td>
+                <td><span style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--muted)' }}>{t.reference}</span></td>
+                <td>
+                  <span style={{ fontWeight: 600 }}>{t.is_anonymous ? 'Anonymous' : (t.contributor?.name ?? '—')}</span>
+                </td>
+                <td><span className="channel-tag">{t.channel_label ?? t.channel}</span></td>
                 <td style={{ fontFamily: 'var(--mono)', fontSize: 12, color: 'var(--muted)' }}>
-                  {new Date(t.transacted_at).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                  {new Date(t.created_at).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
                 </td>
                 <td>
                   <span style={{
@@ -92,7 +93,7 @@ export default function LiveTransactions() {
                     {t.status}
                   </span>
                 </td>
-                <td className="amount-cell" style={{ textAlign: 'right' }}>{fmtTZS(t.amount)}</td>
+                <td className="amount-cell" style={{ textAlign: 'right' }}>{fmtTZSFull(t.amount)}</td>
               </tr>
             ))}
           </tbody>

@@ -27,7 +27,8 @@ export default function WithdrawalsPage() {
   );
 
   const kpi       = overview.data;
-  const available = kpi?.available ?? 0;
+  const available = kpi?.available ?? kpi?.chapaa_balance ?? 0;
+  const withdrawn = kpi?.withdrawn ?? 0;
   const rawAmt    = parseInt(amount.replace(/\D/g, '') || '0');
   const selected  = accounts.data?.find((a: PaymentAccount) => a.id === selectedId);
 
@@ -71,24 +72,20 @@ export default function WithdrawalsPage() {
       </div>
 
       {/* KPI Hero */}
-      <div className="kpi-hero" style={{ gridTemplateColumns: '1fr 1fr 1fr 1fr' }}>
+      <div className="kpi-hero" style={{ gridTemplateColumns: '1fr 1fr 1fr' }}>
         <div className="hero-main">
           <div className="label"><span className="dot"></span>Total disbursed</div>
-          <div className="big-amount"><span className="cur">TZS</span>{kpi ? fmtTZSFull(kpi.withdrawn) : '—'}</div>
+          <div className="big-amount"><span className="cur">TZS</span>{kpi ? fmtTZSFull(withdrawn) : '—'}</div>
           <div className="of">across hospitals and medical partners</div>
         </div>
         <div className="hero-stat">
           <div className="lbl">Available</div>
-          <div className="val">{kpi ? fmtTZS(kpi.available) : '—'}</div>
+          <div className="val">{kpi ? fmtTZS(available) : '—'}</div>
           <div className="delta delta-up">↑ ready to disburse</div>
         </div>
         <div className="hero-stat">
           <div className="lbl">Disbursements</div>
           <div className="val">{list.total}</div>
-        </div>
-        <div className="hero-stat">
-          <div className="lbl">Surgeries funded</div>
-          <div className="val">{kpi?.surgeries_funded ?? '—'}</div>
         </div>
       </div>
 
@@ -102,7 +99,7 @@ export default function WithdrawalsPage() {
           <div style={{ textAlign: 'right' }}>
             <div style={{ fontSize: 10, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--muted)', fontWeight: 600, marginBottom: 3 }}>Available balance</div>
             <div style={{ fontFamily: 'var(--mono)', fontSize: 16, fontWeight: 700, color: 'var(--teal)' }}>
-              TZS {kpi ? fmtTZSFull(kpi.available) : '—'}
+              TZS {kpi ? fmtTZSFull(available) : '—'}
             </div>
           </div>
         </div>

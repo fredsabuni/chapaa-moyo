@@ -14,11 +14,11 @@ export default function AnalyticsPage() {
   const regions  = useQuery(getRegions);
   const sizes    = useQuery(getSizes);
 
-  const geoData  = regions.data  ?? [];
-  const chData   = channels.data ?? [];
-  const sizeData = sizes.data    ?? [];
-  const dailyPts = daily.data    ?? [];
-  const geoMax   = Math.max(...geoData.map(x => x.total), 1);
+  const geoData  = Array.isArray(regions.data)  ? regions.data  : [];
+  const chData   = Array.isArray(channels.data) ? channels.data : [];
+  const sizeData = Array.isArray(sizes.data)    ? sizes.data    : [];
+  const dailyPts = Array.isArray(daily.data)    ? daily.data    : [];
+  const geoMax   = geoData.reduce((m, x) => Math.max(m, x.total), 1);
 
   return (
     <div>

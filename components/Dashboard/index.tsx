@@ -8,13 +8,10 @@ import { logout } from '@/lib/auth';
 import { getUser } from '@/lib/session';
 import Overview from './pages/Overview';
 import LiveTransactions from './pages/LiveTransactions';
-import ContributorsPage from './pages/ContributorsPage';
 import WithdrawalsPage from './pages/WithdrawalsPage';
-import AnalyticsPage from './pages/AnalyticsPage';
-import ReportsPage from './pages/ReportsPage';
 import SettingsPage from './pages/SettingsPage';
 
-type Page = 'overview' | 'transactions' | 'contributors' | 'withdrawals' | 'analytics' | 'reports' | 'settings';
+type Page = 'overview' | 'transactions' | 'withdrawals' | 'settings';
 
 export default function Dashboard({ onOpenWithdraw }: { onOpenWithdraw: () => void }) {
   const router = useRouter();
@@ -61,10 +58,6 @@ export default function Dashboard({ onOpenWithdraw }: { onOpenWithdraw: () => vo
             <svg className="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M3 12h4l3-9 4 18 3-9h4"/></svg>,
             'Live Transactions'
           )}
-          {navItem('contributors',
-            <svg className="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>,
-            'Contributors'
-          )}
           {navItem('withdrawals',
             <svg className="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M12 2v20M2 12h20"/></svg>,
             'Disbursements'
@@ -72,15 +65,7 @@ export default function Dashboard({ onOpenWithdraw }: { onOpenWithdraw: () => vo
         </div>
 
         <div className="nav-section">
-          <div className="nav-label">Insights</div>
-          {navItem('analytics',
-            <svg className="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M3 3v18h18"/><path d="M7 14l4-4 4 4 5-5"/></svg>,
-            'Analytics'
-          )}
-          {navItem('reports',
-            <svg className="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/></svg>,
-            'Reports'
-          )}
+          <div className="nav-label">Account</div>
           {navItem('settings',
             <svg className="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h0a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51h0a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v0a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>,
             'Settings'
@@ -120,10 +105,7 @@ export default function Dashboard({ onOpenWithdraw }: { onOpenWithdraw: () => vo
       <main className="main">
         {activePage === 'overview'      && <Overview onOpenWithdraw={onOpenWithdraw} />}
         {activePage === 'transactions'  && <LiveTransactions />}
-        {activePage === 'contributors'  && <ContributorsPage />}
         {activePage === 'withdrawals'   && <WithdrawalsPage />}
-        {activePage === 'analytics'     && <AnalyticsPage />}
-        {activePage === 'reports'       && <ReportsPage />}
         {activePage === 'settings'      && <SettingsPage />}
       </main>
     </div>

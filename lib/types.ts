@@ -74,20 +74,24 @@ export interface AuthSession {
 // ─── Dashboard ────────────────────────────────────────────────────────────────
 
 export interface DashboardOverview {
-  campaign_id: string;
-  raised: number;
-  goal: number;
-  pct_funded: number;
-  available: number;
-  withdrawn: number;
-  contributors: number;
-  days_left: number;
-  today_total: number;
-  today_transactions: number;
-  avg_contribution: number;
-  transactions_per_hour: number;
-  weekly_growth_pct: number;
-  surgeries_funded: number;
+  campaign_id?: string;
+  raised?: number;
+  total_raised?: number;
+  goal?: number;
+  target_amount?: number;
+  pct_funded?: number;
+  percent_funded?: number;
+  available?: number;
+  chapaa_balance?: number;
+  withdrawn?: number;
+  contributors?: number;
+  days_left?: number;
+  today_total?: number;
+  today_transactions?: number;
+  avg_contribution?: number;
+  transactions_per_hour?: number;
+  weekly_growth_pct?: number;
+  surgeries_funded?: number;
 }
 
 // ─── Contributors ─────────────────────────────────────────────────────────────
@@ -121,18 +125,22 @@ export interface ContributorStats {
 
 // ─── Transactions ─────────────────────────────────────────────────────────────
 
-export type TransactionStatus = 'confirmed' | 'pending' | 'failed';
-
 export interface Transaction {
-  id: string;
-  contributor_name: string;
-  contributor_id: string | null;
+  id: number | string;
+  reference: string;
   amount: number;
-  channel: string;
-  region: string;
-  status: TransactionStatus;
-  transacted_at: string;
+  status: string;
+  collection_type?: string;
   is_anonymous: boolean;
+  contributor?: { name: string; phone_number?: string } | null;
+  channel: string;
+  channel_label?: string;
+  country?: string;
+  description?: string;
+  is_deposit?: boolean;
+  is_complete?: boolean;
+  created_at: string;
+  updated_at?: string;
 }
 
 export interface TransactionStats {

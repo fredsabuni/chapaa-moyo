@@ -37,17 +37,17 @@ export default function ContributorsPage() {
       <div className="kpi-hero" style={{ gridTemplateColumns: '1fr 1fr 1fr 1fr' }}>
         <div className="hero-main">
           <div className="label"><span className="dot"></span>All-time contributors</div>
-          <div className="big-amount">{kpi ? kpi.total.toLocaleString() : '—'}</div>
+          <div className="big-amount">{kpi ? (kpi.total ?? 0).toLocaleString() : '—'}</div>
           <div className="of">from <b>{kpi?.countries ?? '—'} countries &amp; regions</b></div>
         </div>
         <div className="hero-stat">
           <div className="lbl">First-time</div>
-          <div className="val">{kpi ? kpi.first_time.toLocaleString() : '—'}</div>
+          <div className="val">{kpi ? (kpi.first_time ?? 0).toLocaleString() : '—'}</div>
           <div className="delta delta-up">↑ {kpi?.first_time_pct ?? '—'}%</div>
         </div>
         <div className="hero-stat">
           <div className="lbl">Returning</div>
-          <div className="val">{kpi ? kpi.returning.toLocaleString() : '—'}</div>
+          <div className="val">{kpi ? (kpi.returning ?? 0).toLocaleString() : '—'}</div>
           <div className="delta delta-up">↑ {kpi?.returning_pct ?? '—'}%</div>
         </div>
         <div className="hero-stat">

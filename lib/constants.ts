@@ -42,10 +42,13 @@ export const ADMIN_ROLE_LABELS: Record<string, string> = {
 };
 
 export const STATUS_COLORS: Record<string, string> = {
+  SUCCESS:     '#15B894',
   confirmed:   '#15B894',
   paid:        '#15B894',
+  PENDING:     '#E89B3C',
   pending:     '#E89B3C',
   pending_otp: '#E89B3C',
+  FAILED:      '#E5547D',
   failed:      '#E5547D',
   cancelled:   '#9AA3BD',
 };
