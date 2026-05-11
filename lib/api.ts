@@ -8,7 +8,7 @@ import {
 } from './session';
 import type { ListResponse, PaginationMeta } from './types';
 
-export const BASE_URL = 'https://api.chapaa.co.tz/api/v1';
+export const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? 'https://api.chapaa.co.tz/api/v1';
 
 // ─── Error ────────────────────────────────────────────────────────────────────
 

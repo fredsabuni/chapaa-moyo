@@ -1,4 +1,4 @@
-import { publicGet } from '../api';
+import { publicGet, BASE_URL } from '../api';
 import type { PublicCampaign, PublicDonor, ListResponse } from '../types';
 
 export const getPublicCampaign = (slug: string) =>
@@ -6,7 +6,7 @@ export const getPublicCampaign = (slug: string) =>
 
 export async function getTopDonors(slug: string, page = 1, limit = 8): Promise<ListResponse<PublicDonor>> {
   const res = await fetch(
-    `https://api.chapaa.co.tz/api/v1/public/campaigns/${slug}/donors?page=${page}&limit=${limit}`,
+    `${BASE_URL}/public/campaigns/${slug}/donors?page=${page}&limit=${limit}`,
     { headers: { Accept: 'application/json' } },
   );
   const json = await res.json();
