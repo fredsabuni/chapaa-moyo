@@ -10,6 +10,34 @@ import type { ListResponse, PaginationMeta } from './types';
 
 export const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? 'https://api.chapaa.co.tz/api/v1';
 
+// Root of the Laravel app — used for /sanctum/csrf-cookie (lives outside /api/v1)
+const SANCTUM_ROOT = BASE_URL.replace(/\/api\/v1\/?$/, '');
+
+// ─── CSRF (Laravel Sanctum) ───────────────────────────────────────────────────
+
+function getXsrfToken(): string | null {
+  if (typeof document === 'undefined') return null;
+  const match = document.cookie.match(/(?:^|;\s*)XSRF-TOKEN=([^;]*)/);
+  return match ? decodeURIComponent(match[1]) : null;
+}
+
+let csrfPromise: Promise<void> | null = null;
+
+async function ensureCsrf(): Promise<void> {
+  if (getXsrfToken()) return;
+  if (!csrfPromise) {
+    csrfPromise = fetch(`${SANCTUM_ROOT}/sanctum/csrf-cookie`, {
+      credentials: 'include',
+    }).then(() => { csrfPromise = null; });
+  }
+  await csrfPromise;
+}
+
+function xsrfHeader(): Record<string, string> {
+  const token = getXsrfToken();
+  return token ? { 'X-XSRF-TOKEN': token } : {};
+}
+
 // ─── Error ────────────────────────────────────────────────────────────────────
 
 export class ApiError extends Error {
@@ -40,9 +68,11 @@ async function doRefresh(): Promise<void> {
     throw new ApiError('SESSION_EXPIRED', 'Session expired. Please log in again.', 401);
   }
 
+  await ensureCsrf();
   const res  = await fetch(`${BASE_URL}/auth/refresh`, {
     method:  'POST',
-    headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json', Accept: 'application/json', ...xsrfHeader() },
     body:    JSON.stringify({ refresh_token: refreshToken }),
   });
 
@@ -74,12 +104,14 @@ async function ensureFreshToken(): Promise<void> {
 
 // ─── Core fetch ───────────────────────────────────────────────────────────────
 
-function buildHeaders(init: RequestInit): HeadersInit {
+async function buildHeaders(init: RequestInit): Promise<HeadersInit> {
   const token = getAccessToken();
+  const hasMutatingBody = !!init.body;
+  if (hasMutatingBody) await ensureCsrf();
   return {
     Accept:           'application/json',
-    ...(token        ? { Authorization: `Bearer ${token}` } : {}),
-    ...(init.body    ? { 'Content-Type': 'application/json' } : {}),
+    ...(token             ? { Authorization: `Bearer ${token}` } : {}),
+    ...(hasMutatingBody   ? { 'Content-Type': 'application/json', ...xsrfHeader() } : {}),
     ...(init.headers ?? {}),
   };
 }
@@ -101,8 +133,8 @@ async function parseResponse<T>(res: Response): Promise<T> {
 async function coreFetch<T>(path: string, init: RequestInit = {}): Promise<T> {
   await ensureFreshToken();
 
-  const headers = buildHeaders(init);
-  let res = await fetch(`${BASE_URL}${path}`, { ...init, headers });
+  const headers = await buildHeaders(init);
+  let res = await fetch(`${BASE_URL}${path}`, { ...init, credentials: 'include', headers });
 
   // Single retry after a fresh token refresh on 401
   if (res.status === 401) {
@@ -110,6 +142,7 @@ async function coreFetch<T>(path: string, init: RequestInit = {}): Promise<T> {
     await doRefresh();
     res = await fetch(`${BASE_URL}${path}`, {
       ...init,
+      credentials: 'include',
       headers: { ...headers, Authorization: `Bearer ${getAccessToken()}` },
     });
   }
@@ -166,10 +199,12 @@ export const api = {
 
 // Public fetch (no auth header — for login, public endpoints)
 export async function publicPost<T>(path: string, body: unknown): Promise<T> {
+  await ensureCsrf();
   const res  = await fetch(`${BASE_URL}${path}`, {
-    method:  'POST',
-    headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-    body:    JSON.stringify(body),
+    method:      'POST',
+    credentials: 'include',
+    headers:     { 'Content-Type': 'application/json', Accept: 'application/json', ...xsrfHeader() },
+    body:        JSON.stringify(body),
   });
   const json = await res.json();
   if (!res.ok || json.success === false) {
