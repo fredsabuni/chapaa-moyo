@@ -16,26 +16,48 @@ export interface ListResponse<T> {
 // ─── Auth ─────────────────────────────────────────────────────────────────────
 
 export interface User {
-  id: string;
+  id: number | string;
   name: string;
   email: string;
-  phone: string;
+  phone: string | null;
   roles: string[];
   avatar_initials?: string;
+  last_seen_at?: string | null;
+}
+
+export interface CampaignFlags {
+  is_active: boolean;
+  is_public: boolean;
+  is_featured: boolean;
+  is_verified: boolean;
+  is_campaign_end: boolean;
+  is_suspended: boolean;
 }
 
 export interface Campaign {
-  id: string;
+  id: number | string;
   slug: string;
   name: string;
-  category?: string;
-  organisation?: string;
-  verified?: boolean;
-  goal: number;
-  raised?: number;
-  end_date: string;
-  public_url?: string;
+  subtitle?: string;
   description?: string;
+  cover_image_url?: string;
+  currency?: string;
+  category?: string;
+  category_id?: number;
+  organisation?: string;
+  target_amount: number;
+  total_raised: number;
+  remaining_amount?: number;
+  percent_funded?: number;
+  chapaa_balance?: number;
+  chapaa_credited_amount?: number;
+  other_credited_amount?: number;
+  start_date?: string;
+  end_date: string;
+  days_left?: number;
+  flags?: CampaignFlags;
+  phone_number?: string | null;
+  public_url?: string;
   created_at?: string;
   updated_at?: string;
 }

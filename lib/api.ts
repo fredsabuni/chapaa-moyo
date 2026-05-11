@@ -54,7 +54,14 @@ async function doRefresh(): Promise<void> {
     throw new ApiError('REFRESH_FAILED', 'Could not refresh session.', res.status);
   }
 
-  patchTokens(json.data);
+  const d = json.data ?? {};
+  patchTokens({
+    access_token:       d.access_token,
+    access_expires_at:  d.access_expires_at
+      ?? (d.expires_in ? new Date(Date.now() + d.expires_in * 1000).toISOString() : undefined),
+    refresh_token:      d.refresh_token,
+    refresh_expires_at: d.refresh_expires_at,
+  });
 }
 
 async function ensureFreshToken(): Promise<void> {

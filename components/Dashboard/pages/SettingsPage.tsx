@@ -108,9 +108,10 @@ export default function SettingsPage() {
             <>
               {[
                 ['Campaign name',  c.name],
-                ['Category',       c.category ?? '—'],
-                ['Organisation',   `${c.organisation ?? '—'}${c.verified ? ' (Verified)' : ''}`],
-                ['Goal amount',    `TZS ${c.goal.toLocaleString()}`],
+                ['Subtitle',       c.subtitle ?? '—'],
+                ['Organisation',   `${c.organisation ?? '—'}${c.flags?.is_verified ? ' ✓ Verified' : ''}`],
+                ['Target amount',  `TZS ${c.target_amount.toLocaleString()}`],
+                ['Total raised',   `TZS ${c.total_raised.toLocaleString()}`],
                 ['Campaign end',   new Date(c.end_date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })],
                 ['Public URL',     c.public_url ?? '—'],
               ].map(([l, v], i) => (
